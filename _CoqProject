@@ -1,0 +1,27 @@
+-R theories/ category
+
+-arg -w
+-arg -all
+
+theories/ordinals/arithmetic.v
+theories/ordinals/ord_stepindex.v
+theories/ordinals/set_functions.v
+theories/ordinals/set_model.v
+theories/ordinals/set_ordinals.v
+theories/ordinals/set_sets.v
+
+theories/test.v
+theories/base.v
+theories/setoid.v
+theories/category.v
+theories/terminal.v
+theories/functor.v
+theories/limit.v
+theories/prod.v
+theories/exp.v
+theories/slice.v
+theories/pullback.v
+theories/subobject.v
+theories/sets.v
+theories/instances/sets.v
+theories/instances/presheaf.v
