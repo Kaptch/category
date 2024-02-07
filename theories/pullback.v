@@ -1,4 +1,7 @@
-From category Require Import base setoid category.
+From category Require Import
+  base
+  setoid
+  category.
 
 Section PB.
   Local Open Scope setoid_scope.

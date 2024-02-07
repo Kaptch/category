@@ -525,8 +525,83 @@ Section SievesPSh.
 
   Context {C : Category}.
 
-  Local Axiom ID_epsilon :
-    ∀ T : Type, ConstructiveIndefiniteDescription_on T.
+  Lemma PSh_mono_pointwise {X Y : PSh C} (f : X [⤷] Y) :
+    ∀ (x : C op) (D : SetoidCat) (y z : @Arr SetoidCat D (X x)), (monic f x) ∘ y ≡ (monic f x) ∘ z → y ≡ z.
+  Proof.
+    intros x D y z H t.
+    simpl in H.
+    unshelve epose (T := _ : PSh C).
+    {
+      unshelve econstructor.
+      - intros i.
+        apply (Hom (i, x)).
+      - intros; simpl.
+        unshelve econstructor.
+        + intros g.
+          unshelve econstructor.
+          * intros h.
+            apply (h ∘ g).
+          * intros; simpl.
+            now do 2 f_equiv.
+        + intros; simpl.
+          intros ?; now do 2 f_equiv.
+      - intros; simpl.
+        intros ?; now rewrite arrow_comp_id_r.
+      - intros; simpl.
+        intros ?; unfold compose; simpl.
+        symmetry.
+        apply arrow_comp_assoc.
+    }
+    simpl in T.
+    unshelve epose (g₁' := _ : @Arr (PSh C) T X).
+    {
+      unshelve econstructor.
+      - intros U.
+        subst T.
+        simpl.
+        unshelve econstructor.
+        + intros g.
+          apply (fmap X g (y t)).
+        + intros; simpl.
+          now rewrite H0.
+      - intros; simpl.
+        intros ?; unfold compose; simpl.
+        apply (@fmap_comp (C op) SetoidCat X _ _ _ f0 a (y t)).
+    }
+    unshelve epose (g₂' := _ : @Arr (PSh C) T X).
+    {
+      unshelve econstructor.
+      - intros U.
+        subst T.
+        simpl.
+        unshelve econstructor.
+        + intros g.
+          apply (fmap X g (z t)).
+        + intros; simpl.
+          now rewrite H0.
+      - intros; simpl.
+        intros ?; unfold compose; simpl.
+        apply (@fmap_comp (C op) SetoidCat X _ _ _ f0 a (z t)).
+    }
+    pose proof (@monic_cancel (PSh C) X Y f T g₁' g₂') as G.
+    subst T g₁' g₂'.
+    simpl in *.
+    unfold compose in *.
+    assert (∀ (X0 : C) (a : X0 [~>] x), (η (monic f)) X0 (fmap X a (y t)) ≡ (η (monic f)) X0 (fmap X a (z t))) as G'.
+    {
+      intros ??; simpl.
+      rewrite (@eta_comp _ _ _ _ (monic f) _ _ a (y t)).
+      rewrite (@eta_comp _ _ _ _ (monic f) _ _ a (z t)).
+      simpl.
+      unfold compose; simpl.
+      f_equiv.
+      apply H.
+    }
+    specialize (G G' x ı).
+    rewrite (@fmap_id _ _ X _ (y t)) in G.
+    rewrite (@fmap_id _ _ X _ (z t)) in G.
+    apply G.
+  Qed.
 
   Program Definition PSh_sieve : PSh C :=
     {|
@@ -599,8 +674,7 @@ Section SievesPSh.
     |}.
   Next Obligation.
     intros; simpl.
-    intros X ? d f.
-    reflexivity.
+    intros X ? [] [].
   Qed.
 
   Program Definition PSh_char {X Y : PSh C} (f : X [⤷] Y) : Y [~>] PSh_sieve :=
@@ -644,6 +718,9 @@ Section SievesPSh.
       apply (@fmap_comp _ _ Y _ _ _ g h a).
   Qed.
 
+  Local Axiom ID_epsilon :
+    ∀ T : Type, ConstructiveIndefiniteDescription_on T.
+
   Lemma char_Pb {X Y : PSh C} (f : X [⤷] Y)
     : isPullback (PSh_char f)
         (PSh_true_arr)
@@ -677,8 +754,21 @@ Section SievesPSh.
           simpl in *.
           unfold id in *.
           simpl in *.
-          (* provable, f is mono *)
-          admit.
+          assert ((monic f) x X1 ≡ (monic f) x X2) as H1.
+          {
+            rewrite s, s0.
+            rewrite H0.
+            reflexivity.
+          }
+          unshelve epose proof (PSh_mono_pointwise f x (terminal_obj (limit_obj (Setoid_hasLimits Empty_diagram))) (λₛ i, X1) (λₛ i, X2)) as H2.
+          { intros; reflexivity. }
+          { intros; reflexivity. }
+          simpl in H2.
+          unfold compose in H2.
+          apply H2.
+          -- intros ?; assumption.
+          -- unshelve eapply (λₙ i :: ⌊ Empty_set ⌋, match i with end).
+             intros [].
       + intros; simpl.
         intros; simpl.
         unfold compose; simpl.
@@ -689,7 +779,56 @@ Section SievesPSh.
         simpl in *.
         unfold id in *.
         simpl in *.
-        admit.
-  Admitted.
+        rewrite (@eta_comp _ _ _ _ h _ _ f0 a) in s.
+        simpl in *.
+        unfold compose in *; simpl in *.
+        rewrite <-s0 in s; clear s0.
+        rewrite <-(@eta_comp _ _ _ _ (monic f) _ _ f0 X2) in s.
+        simpl in *.
+        unfold compose in *; simpl in *.
+        unshelve epose proof (PSh_mono_pointwise f Y0 (terminal_obj (limit_obj (Setoid_hasLimits Empty_diagram))) (λₛ i, X1) (λₛ i, fmap X f0 X2)) as H2.
+        { intros; reflexivity. }
+        { intros; reflexivity. }
+        simpl in H2.
+        unfold compose in H2.
+        apply H2.
+        -- intros ?; assumption.
+        -- unshelve eapply (λₙ i :: ⌊ Empty_set ⌋, match i with end).
+           intros [].
+      + split.
+        * split.
+          -- intros x a; simpl.
+             unfold compose; simpl.
+             destruct (ID_epsilon (X x)) as [X1 ?].
+             rewrite (@fmap_id _ _ Y _ ((η h) x a)) in s.
+             simpl in s.
+             symmetry.
+             apply s.
+          -- intros x a; simpl.
+             intros [].
+        * intros x' [G1 G2].
+          simpl.
+          intros T a.
+          destruct (ID_epsilon (X T)) as [X1 ?].
+          rewrite (@fmap_id _ _ Y _ ((η h) T a)) in s.
+          simpl in s.
+          unfold id in s.
+          simpl in s.
+          assert ((η (monic f)) T X1 ≡ (η ((monic f) ∘ x')) T a) as H1.
+          {
+            rewrite s.
+            apply G1.
+          }
+          simpl in H1.
+          unfold compose in H1.
+          unshelve epose proof (PSh_mono_pointwise f T (terminal_obj (limit_obj (Setoid_hasLimits Empty_diagram))) (λₛ i, X1) (λₛ i, ((η x') T a))) as H2.
+          { intros; reflexivity. }
+          { intros; reflexivity. }
+          simpl in H2.
+          apply H2.
+          -- intros ?; simpl; unfold compose; simpl; assumption.
+          -- unshelve eapply (λₙ i :: ⌊ Empty_set ⌋, match i with end).
+             intros [].
+  Qed.
 
 End SievesPSh.

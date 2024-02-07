@@ -1,4 +1,8 @@
-From category Require Import base setoid category sets.
+From category Require Import
+  base
+  setoid
+  category
+  sets.
 
 Section Functor.
   Local Open Scope setoid_scope.

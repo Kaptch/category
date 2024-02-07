@@ -103,7 +103,7 @@ Section Mono.
 
   Record Monomorphism (A B : C) := {
       monic :> A [~>] B;
-      monic_cancel : ∀ {D : C} (g₁ g₂ : D [~>] A), monic ∘ g₁ ≡ monic ∘ g₂;
+      monic_cancel : ∀ {D : C} (g₁ g₂ : D [~>] A), monic ∘ g₁ ≡ monic ∘ g₂ → g₁ ≡ g₂;
     }.
 End Mono.
 
@@ -118,7 +118,7 @@ Section Epi.
 
   Record Epimorphism (A B : C) := {
       epic :> A [~>] B;
-      epic_cancel : ∀ {D : C} (g₁ g₂ : B [~>] D), g₁ ∘ epic ≡ g₂ ∘ epic;
+      epic_cancel : ∀ {D : C} (g₁ g₂ : B [~>] D), g₁ ∘ epic ≡ g₂ ∘ epic → g₁ ≡ g₂;
     }.
 End Epi.
 
@@ -126,7 +126,6 @@ Arguments epic {_ _ _}.
 
 Notation "A [⇥] B" := (Epimorphism A B) (at level 70, right associativity)
     : cat_scope.
-
 
 Section ProdCat.
   Local Open Scope cat_scope.

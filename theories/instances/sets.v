@@ -63,7 +63,7 @@ Section SetoidInst.
   Next Obligation.
     intros; simpl.
     intros []; unfold compose; simpl.
-    rewrite (@eta_comp _ _ _ _ (η cone_nat X) _ _ f x).
+    rewrite (eta_comp (η cone_nat X) _ _ f x).
     simpl.
     unfold compose; simpl.
     reflexivity.

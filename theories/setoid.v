@@ -1,4 +1,5 @@
-Require Import category.base.
+From category Require Import
+  base.
 
 Declare Scope setoid_scope.
 Delimit Scope setoid_scope with setoid.

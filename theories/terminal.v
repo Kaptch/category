@@ -1,4 +1,7 @@
-From category Require Import base setoid category.
+From category Require Import
+  base
+  setoid
+  category.
 
 Section Terminal.
   Local Open Scope cat_scope.
