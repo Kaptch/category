@@ -38,4 +38,4 @@ End Terminal.
 Arguments terminal_obj {_}.
 Arguments terminal_proj {_ _}.
 
-Notation "𝟭" := (terminal_obj _) : cat_scope.
+(* Notation "𝟭" := (terminal_obj _) : cat_scope. *)

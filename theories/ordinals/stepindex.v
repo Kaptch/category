@@ -1,16 +1,17 @@
 From iris.prelude Require Export prelude.
 From iris.prelude Require Import options.
 
-(* TODO: move into stdpp *)
-Inductive rc {A} (R: A → A → Prop) (x: A) (y: A):  Prop :=
+(* (* TODO: move into stdpp *) *)
+
+Inductive rc {A} (R : A → A → Prop) (x : A) (y : A) : Prop :=
 | rc_refl: x = y → rc R x y
 | rc_subrel: R x y → rc R x y.
 Local Hint Constructors rc : core.
 
 Global Instance rc_reflexive {A} (R : A → A → Prop) : Reflexive (rc R).
-Proof. intros ?; by apply rc_refl. Qed.
+Proof. intros ?; now apply rc_refl. Defined.
 Global Instance rc_subrelation {A} (R : A → A → Prop): subrelation R (rc R).
-Proof. intros ? ? ?; by apply rc_subrel. Qed.
+Proof. intros ? ? ?; now apply rc_subrel. Defined.
 
 Polymorphic Structure IndexMixin {A} {R: A → A → Prop} {zero: A} {succ: A → A} :=
   {
@@ -59,7 +60,7 @@ Proof. intros [H | H]; auto. Qed.
 Section index_laws.
   Context {SI : indexT}.
   Global Instance index_lt_trans : Transitive (index_lt SI).
-  Proof. eapply index_mixin_lt_trans, SI. Qed.
+  Proof. eapply index_mixin_lt_trans, SI. Defined.
   Lemma index_lt_wf : wf (index_lt SI).
   Proof. eapply index_mixin_lt_wf, SI. Qed.
   Lemma index_lt_eq_lt_dec (α β : SI) : (α ≺ β) + (α = β) + (β ≺ α).
@@ -98,7 +99,7 @@ Section StepIndexProperties.
     split; [by constructor|].
     intros ??? [] []; subst; eauto.
     right; transitivity y; auto.
-  Qed.
+  Defined.
 
   Lemma index_le_total α β: {α ⪯ β} + {β ⪯ α}.
   Proof.

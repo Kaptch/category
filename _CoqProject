@@ -10,7 +10,6 @@ theories/ordinals/set_model.v
 theories/ordinals/set_ordinals.v
 theories/ordinals/set_sets.v
 
-theories/test.v
 theories/base.v
 theories/setoid.v
 theories/category.v
@@ -20,8 +19,20 @@ theories/limit.v
 theories/prod.v
 theories/exp.v
 theories/slice.v
+theories/comma.v
+theories/hom.v
+theories/topos.v
 theories/pullback.v
+theories/adjunction.v
 theories/subobject.v
 theories/sets.v
 theories/instances/sets.v
 theories/instances/presheaf.v
+
+theories/classes/exp.v
+theories/classes/limits.v
+theories/classes/subobject.v
+
+theories/internal_lang/presheaf.v
+
+theories/test.v

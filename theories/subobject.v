@@ -6,7 +6,8 @@ From category Require Import
                       functor
                       limit
                       prod
-                      pullback.
+                      pullback
+                      classes.limits.
 
 Section SubObjectClassifier.
   Local Open Scope setoid_scope.
@@ -14,16 +15,15 @@ Section SubObjectClassifier.
   Local Open Scope functor_scope.
 
   Context {C : Category}.
-  Context {H : @Limit _ C Empty_diagram}.
+  Context `{hasTerminal C}.
 
   Record SubobjectClassifier := {
       subobject_classifier :> C;
-      true : EmptyLimit H [⤷] subobject_classifier;
-      subobject_classifier_ump1 : ∀ {U X} (f : U [⤷] X),
+      true : 𝟙 @ C [⤷] subobject_classifier;
+      subobject_classifier_ump : ∀ {U X} (f : U [⤷] X),
         Σ! (char : X [~>] subobject_classifier),
-        isPullback char true f (projT1 (terminal_proj U));
+        isPullback char true f (! @ C);
     }.
 End SubObjectClassifier.
 
 Arguments subobject_classifier {_ _ _}.
-Notation "'Ω'" := (subobject_classifier) : cat_scope.

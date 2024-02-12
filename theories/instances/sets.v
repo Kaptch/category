@@ -7,12 +7,47 @@ From category Require Import
                       functor
                       limit
                       prod
-                      exp.
+                      exp
+                      classes.limits
+                      classes.exp.
 
 Section SetoidInst.
   Local Open Scope setoid_scope.
   Local Open Scope cat_scope.
   Local Open Scope functor_scope.
+
+  Lemma Setoid_mono_inj {X Y : SetoidCat} (f : @Monomorphism SetoidCat X Y)
+    : ∀ x y, monic f x ≡ monic f y → x ≡ y.
+  Proof.
+    intros x y H.
+    pose proof (@monic_cancel SetoidCat X Y f).
+    pose (Z := [unit] : SetoidCat).
+    unshelve epose (x' := (λₛ i :: Z, x) : Z [~>] X).
+    { intros; reflexivity. }
+    unshelve epose (y' := (λₛ i :: Z, y) : Z [~>] X).
+    { intros; reflexivity. }
+    simpl in *.
+    assert (f ∘ x' ≡ f ∘ y') as H1.
+    { intros ?; simpl; unfold compose; assumption. }
+    pose proof (@monic_cancel SetoidCat X Y f Z x' y' H1) as H2.
+    specialize (H2 tt).
+    simpl in H2.
+    apply H2.
+  Qed.
+
+  Program Definition Setoid_inj_mono {X Y : SetoidCat} (f : X [~>] Y)
+    (H : (∀ x y, f x ≡ f y → x ≡ y))
+    : Monomorphism X Y :=
+    {|
+      monic := f;
+    |}.
+  Next Obligation.
+    intros ?? f H Z g₁ g₂ G z.
+    specialize (G z).
+    simpl in G.
+    unfold compose in G; simpl in G.
+    apply (H _ _ G).
+  Qed.
 
   Program Definition TerminalSet : Terminal SetoidCat :=
     {|
@@ -105,42 +140,46 @@ Section SetoidInst.
     limit_obj := Setoid_limit_terminal D J;
   |}.
 
-  Program Definition Setoid_hasBinProducts (J : bool -> SetoidCat) : Prod J :=
+  Program Definition Setoid_hasBinProducts (X Y : SetoidCat) : BinProd X Y :=
     {|
-      prod_obj := (J true × J false)%setoid;
-      proj_arr := λₙ x :: ⌊ bool ⌋,
-        (λₛ H :: (J true × J false)%setoid,
-          (if x as b return (J b)
-           then fst H
-           else snd H));
+      bin_prod_obj := (X × Y)%setoid;
+      bin_proj_arr₁ := (λₛ H :: (X × Y)%setoid, fst H);
+      bin_proj_arr₂ := (λₛ H :: (X × Y)%setoid, snd H);
+      bin_prod_ump := λ (p' : Setoid) (p₁ : p' [→] X) (p₂ : p' [→] Y),
+        existT _ (λₛ x, ((p₁ x, p₂ x) : SetoidProd _ _)) _;
     |}.
   Next Obligation.
     intros ?? [? ?] [? ?] [? ?].
     simpl in *.
-    destruct x; assumption.
+    assumption.
   Qed.
   Next Obligation.
-    intros ? ? ? f.
+    intros ? ? ? ? f.
     destruct f.
     simpl.
-    intros [? ?].
-    unfold compose; simpl.
-    destruct X; reflexivity.
+    assumption.
   Qed.
   Next Obligation.
     intros; simpl.
-    unshelve eexists (λₛ x, _).
-    - apply (H true x, (H false x)).
-    - intros; simpl.
-      split; now f_equiv.
-    - split.
-      + intros [|] ?; simpl; unfold compose; simpl; reflexivity.
-      + intros ? G; simpl; intros a; split;
-          rewrite G; unfold compose; simpl; reflexivity.
+    split; now f_equiv.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    split.
+    + split; intros ?; simpl; unfold compose; simpl; reflexivity.
+    + intros ? [G1 G2]; simpl; intros a; split; [rewrite G1 | rewrite G2];
+        unfold compose; simpl; reflexivity.
   Defined.
 
-  Program Definition SetoidArr_hasEval (X Y : SetoidCat)
-    : isEval Setoid_hasBinProducts X Y (SetoidArr Y X) :=
+  Global Instance Setoid_hasBinProductsInst : hasBinaryProducts SetoidCat.
+  Proof.
+    constructor.
+    intros.
+    apply Setoid_hasBinProducts.
+  Defined.
+
+  Program Definition SetoidArr_eval (X Y : SetoidCat)
+    : ((SetoidArr Y X) ×ₒ Y @ SetoidCat) [~>] X :=
     (λₛ x, fst x (snd x)).
   Next Obligation.
     intros; simpl.
@@ -150,14 +189,11 @@ Section SetoidInst.
   Qed.
 
   Program Definition SetoidArr_ump (X Y : SetoidCat)
-    : ∀ (Z' : SetoidCat) (eval' : isEval Setoid_hasBinProducts X Y Z'),
+    : ∀ (Z' : SetoidCat) (eval' : Z' ×ₒ Y @ SetoidCat [~>] X),
     Σ! f : (Z' [~>] (SetoidArr Y X)),
     eval' ≡
-      (SetoidArr_hasEval X Y)
-      ∘ ArrProd
-      ((λ b : bool, if b then Z' else Y))
-      ((λ b : bool, if b then (SetoidArr Y X) else Y))
-      (bin_fun_prod Z' (SetoidArr Y X) Y f) _ _ :=
+      (SetoidArr_eval X Y)
+      ∘ ⟨ f ×ₐ ı ⟩ :=
   λ Z' eval',
     existT
       _
@@ -190,10 +226,24 @@ Section SetoidInst.
   Qed.
 
   Program Definition Setoid_Exp (X Y : SetoidCat)
-    : Exp Setoid_hasBinProducts X Y :=
+    : Exp X Y :=
     {|
       exp_obj := SetoidArr Y X;
-      eval := SetoidArr_hasEval X Y;
+      eval := SetoidArr_eval X Y;
       exp_ump := SetoidArr_ump X Y;
     |}.
+
+  Global Instance Setoid_hasExpInst : hasExp SetoidCat.
+  Proof.
+    constructor.
+    intros.
+    apply Setoid_Exp.
+  Defined.
+
+  Global Instance Setoid_hasLimitsInst : hasLimits SetoidCat.
+  Proof.
+    constructor.
+    intros.
+    apply Setoid_hasLimits.
+  Defined.
 End SetoidInst.

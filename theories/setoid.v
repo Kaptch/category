@@ -6,6 +6,7 @@ Delimit Scope setoid_scope with setoid.
 Local Open Scope setoid_scope.
 
 Section Setoids.
+
   Record Setoid :=
     {
       setoid_carrier :> Type;
@@ -74,7 +75,7 @@ Section Setoids.
     apply H.
   Qed.
 
-  Program Definition SetoidProd (A B : Setoid) : Setoid :=
+  Program Definition SetoidProd (A : Setoid) (B : Setoid) : Setoid :=
     {|
       setoid_carrier := prod A B;
       setoid_eq a b := prod (fst a ≡ fst b) (snd a ≡ snd b);

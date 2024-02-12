@@ -10,6 +10,9 @@ From category Require Import
                       exp
                       pullback
                       subobject
+                      classes.limits
+                      classes.exp
+                      classes.subobject
                       instances.sets.
 
 Definition PSh (C : Category) : Category := @FunCat (C op)%cat SetoidCat.
@@ -115,6 +118,191 @@ Section PSh_inst.
   Local Open Scope cat_scope.
   Local Open Scope functor_scope.
 
+  Program Definition PSh_hasBinProducts {C} (A B : PSh C) : @BinProd (PSh C) A B :=
+    {|
+      bin_prod_obj :=
+        {|
+          FO X := (A X × B X)%setoid;
+          fmap A' B' := λₛ f :: @Arr C B' A',
+            λₛ g,
+            (fmap A f (fst g)
+              , fmap B f (snd g));
+        |};
+      bin_proj_arr₁ := λₙ x, λₛ y, fst y;
+      bin_proj_arr₂ := λₙ x, λₛ y, snd y;
+    |}.
+  Next Obligation.
+    intros; simpl.
+    split; f_equiv; apply H.
+  Defined.
+  Next Obligation.
+    intros; simpl.
+    intros [? ?]; simpl.
+    split; do 3 f_equiv; apply H.
+  Defined.
+  Next Obligation.
+    intros; simpl.
+    intros [? ?]; simpl.
+    split.
+    - apply (@fmap_id (C op) SetoidCat A A0 s).
+    - apply (@fmap_id (C op) SetoidCat B A0 s0).
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros [? ?]; simpl.
+    split.
+    - apply (@fmap_comp (C op) SetoidCat A).
+    - apply (@fmap_comp (C op) SetoidCat B).
+  Qed.
+  Next Obligation.
+    intros; simpl in *.
+    apply H.
+  Qed.
+  Next Obligation.
+    intros; simpl in *.
+    intros [? ?]; simpl;
+      unfold compose; simpl; reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl in *.
+    apply H.
+  Qed.
+  Next Obligation.
+    intros; simpl in *.
+    intros [Q1 Q2]; unfold compose; simpl.
+    reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl in *.
+    unshelve econstructor.
+    - unshelve econstructor.
+      + intros; simpl.
+        unshelve econstructor.
+        * intros; simpl.
+          apply ((p₁ X X0), (p₂ X X0)).
+        * intros; simpl.
+          split; now rewrite H.
+      + intros; simpl.
+        intros; simpl.
+        split.
+        * apply (@eta_comp _ _ _ _ (η p₁) _ _ f a).
+        * apply (@eta_comp _ _ _ _ (η p₂) _ _ f a).
+    - split.
+      + intros; simpl; unfold compose; simpl.
+        split; reflexivity.
+      + intros; simpl.
+        intros; simpl.
+        split.
+        * rewrite (proj1 H).
+          unfold compose; simpl.
+          reflexivity.
+        * rewrite (proj2 H).
+          unfold compose; simpl.
+          reflexivity.
+  Defined.
+
+  Global Instance PSh_hasBinProductsInst {C} : hasBinaryProducts (PSh C).
+  Proof.
+    constructor.
+    intros.
+    apply PSh_hasBinProducts.
+  Defined.
+
+  Program Definition PArr_eval {C} (X Y : PSh C)
+    : (PArr Y X) ×ₒ Y @ (PSh C) [~>] X  :=
+    λₙ x, λₛ y, (fst y x ı (snd y)).
+  Next Obligation.
+    intros ???? [? ?] [? ?] [? ?]; simpl in *.
+    rewrite (s3 x ı).
+    now rewrite s4.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros [? ?]; unfold compose; simpl.
+    rewrite arrow_comp_id_r.
+    rewrite <-(@arr_fmap C Y X X0 r X0 Y0 f ı).
+    f_equiv.
+    now rewrite arrow_comp_id_r.
+  Qed.
+
+  Program Definition PArr_ump {C} (X Y : PSh C) :
+    ∀ (Z' : PSh C) (eval' : Z' ×ₒ Y @ (PSh C) [~>] X),
+    Σ! f : (Z' [~>] (PArr Y X)),
+    eval' ≡
+      (PArr_eval X Y)
+      ∘ ⟨ f ×ₐ ı ⟩ :=
+  λ Z' eval',
+    existT
+      _
+      (λₙ x, λₛ y, λₖ Γ δ μ, (eval' Γ ((fmap Z' δ y), μ)))
+      _.
+  Next Obligation.
+    intros; simpl.
+    intros ??????.
+    f_equiv; split; simpl; [now do 2 f_equiv| assumption].
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros ?????.
+    pose proof (@eta_comp (C op) SetoidCat _ _ eval' _ _ δ₂) as H.
+    simpl in H.
+    unfold compose in H.
+    rewrite <-H.
+    f_equiv.
+    split.
+    - apply (@fmap_comp _ _ Z' _ _ _ δ₂ δ₁ y).
+    - reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros ???; simpl.
+    f_equiv; split; simpl; [| reflexivity].
+    now f_equiv.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros; simpl.
+    intros ???; simpl.
+    f_equiv.
+    split; [| reflexivity].
+    symmetry.
+    apply (@fmap_comp _ _ Z' _ _ _ δ f a).
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    split.
+    - intros ? [? ?]; simpl.
+      unfold compose; simpl.
+      f_equiv.
+      split; [| reflexivity].
+      simpl.
+      rewrite (@fmap_id _ _ Z' X0 s).
+      reflexivity.
+    - intros; simpl.
+      intros ?????; simpl.
+      specialize (H B).
+      rewrite H.
+      rewrite (@eta_comp (C op) SetoidCat Z'
+                    (PArr Y X) x' X0 B δ a B ı v).
+      simpl.
+      now rewrite arrow_comp_id_r.
+  Qed.
+
+  Program Definition PSh_Exp {C} (X Y : PSh C)
+    : Exp X Y :=
+    {|
+      exp_obj := PArr Y X;
+      eval := PArr_eval X Y;
+      exp_ump := PArr_ump X Y;
+    |}.
+
+  Global Instance PSh_ExpInst {C} : hasExp (PSh C).
+  Proof.
+    constructor.
+    intros.
+    apply PSh_Exp.
+  Defined.
+
   Program Definition PSh_limit_pointwise {C} (D : Category)
     (J : D [⇒] (PSh C)) (c : C op) : D [⇒] SetoidCat :=
     {|
@@ -149,14 +337,22 @@ Section PSh_inst.
 
   Program Definition PSh_limit {C} (D : Category) (J : D [⇒] (PSh C)) : PSh C :=
     {|
-      FO c := terminal_obj (limit_obj (Setoid_hasLimits
-                                         (PSh_limit_pointwise D J c)));
-      fmap A B := λₛ x, λₛ X, λₙ y, λₛ T, (fmap (J y) x (X y tt));
+      FO c := lim (PSh_limit_pointwise D J c) @ SetoidCat;
+      fmap A B := λₛ x :: @Arr C B A,
+        λₛ X :: lim PSh_limit_pointwise D J A @ SetoidCat,
+        λₙ y :: D, (* ((λₛ _ :: constantSetFunc D y, fmap (J y) x ((η X) y tt)) *)
+        (*   : @Arr SetoidCat (constantSetFunc D y) (J y B)) *) _;
+      (* wtf??? *)
     |}.
   Next Obligation.
-    intros; simpl.
-    reflexivity.
-  Qed.
+    intros; simpl in *.
+    refine (λₛ T, (fmap (J y) x (X y tt))).
+    intros; simpl; reflexivity.
+  Defined.
+  (* Next Obligation. *)
+  (*   intros; simpl. *)
+  (*   reflexivity. *)
+  (* Qed. *)
   Next Obligation.
     intros; simpl.
     intros []; unfold compose; simpl.
@@ -288,175 +484,12 @@ Section PSh_inst.
       limit_obj := PSh_limit_cone_terminal D J;
     |}.
 
-  Program Definition PSh_hasBinProducts {C} (J : bool -> PSh C) : Prod J :=
-    {|
-      prod_obj :=
-        {|
-          FO X := (J Datatypes.true X × J false X)%setoid;
-          fmap A B := λₛ f :: @Arr C B A,
-            λₛ g,
-            (fmap (J Datatypes.true) f (fst g)
-              , fmap (J false) f (snd g));
-        |};
-      proj_arr := λₙ x, λₙ y, λₛ z, if x as b return (J b y) then fst z else snd z;
-    |}.
-  Next Obligation.
-    intros; simpl.
-    split; f_equiv; apply H.
+  Global Instance PSh_hasLimitsInst {C} : hasLimits (PSh C).
+  Proof.
+    constructor.
+    intros.
+    apply PSh_hasLimits.
   Defined.
-  Next Obligation.
-    intros; simpl.
-    intros [? ?]; simpl.
-    split; do 3 f_equiv; apply H.
-  Defined.
-  Next Obligation.
-    intros; simpl.
-    intros [? ?]; simpl.
-    split.
-    - apply (@fmap_id (C op) SetoidCat (J Datatypes.true) A s).
-    - apply (@fmap_id (C op) SetoidCat (J false) A s0).
-  Qed.
-  Next Obligation.
-    intros; simpl.
-    intros [? ?]; simpl.
-    split.
-    - apply (@fmap_comp (C op) SetoidCat (J Datatypes.true)).
-    - apply (@fmap_comp (C op) SetoidCat (J false)).
-  Qed.
-  Next Obligation.
-    intros; simpl in *.
-    destruct x; apply H.
-  Qed.
-  Next Obligation.
-    intros; simpl in *.
-    destruct x; intros [? ?]; simpl;
-      unfold compose; simpl; reflexivity.
-  Qed.
-  Next Obligation.
-    intros; simpl in *.
-    destruct f.
-    intros; simpl; unfold compose; simpl.
-    reflexivity.
-  Qed.
-  Next Obligation.
-    intros; simpl in *.
-    unshelve econstructor.
-    - unshelve econstructor.
-      + intros; simpl.
-        unshelve econstructor.
-        * intros; simpl.
-          apply ((H Datatypes.true X X0), (H false X X0)).
-        * intros; simpl.
-          split; now rewrite H0.
-      + intros; simpl.
-        intros; simpl.
-        split.
-        * apply (@eta_comp _ _ _ _ (η (η H) Datatypes.true) _ _ f).
-        * apply (@eta_comp _ _ _ _ (η (η H) false) _ _ f).
-    - split.
-      + intros; simpl; unfold compose; simpl.
-        destruct j; reflexivity.
-      + intros; simpl.
-        intros; simpl.
-        split.
-        * rewrite H0.
-          unfold compose; simpl.
-          reflexivity.
-        * rewrite H0.
-          unfold compose; simpl.
-          reflexivity.
-  Defined.
-
-  Program Definition PArr_hasEval {C} (X Y : PSh C)
-    : isEval PSh_hasBinProducts X Y (PArr Y X) :=
-    λₙ x, λₛ y, (fst y x ı (snd y)).
-  Next Obligation.
-    intros ???? [? ?] [? ?] [? ?]; simpl in *.
-    rewrite (s3 x ı).
-    now rewrite s4.
-  Qed.
-  Next Obligation.
-    intros; simpl.
-    intros [? ?]; unfold compose; simpl.
-    rewrite arrow_comp_id_r.
-    rewrite <-(@arr_fmap C Y X X0 r X0 Y0 f ı).
-    f_equiv.
-    now rewrite arrow_comp_id_r.
-  Qed.
-
-  Program Definition PArr_ump {C} (X Y : PSh C) :
-    ∀ (Z' : PSh C) (eval' : isEval PSh_hasBinProducts X Y Z'),
-    Σ! f : (Z' [~>] (PArr Y X)),
-    eval' ≡
-      (PArr_hasEval X Y)
-      ∘ ArrProd
-      (λ b : bool, if b then Z' else Y)
-      (λ b : bool, if b then (PArr Y X) else Y)
-      (bin_fun_prod Z' (PArr Y X) Y f) _ _ :=
-  λ Z' eval',
-    existT
-      _
-      (λₙ x, λₛ y, λₖ Γ δ μ, (eval' Γ ((fmap Z' δ y), μ)))
-      _.
-  Next Obligation.
-    intros; simpl.
-    intros ??????.
-    f_equiv; split; simpl; [now do 2 f_equiv| assumption].
-  Qed.
-  Next Obligation.
-    intros; simpl.
-    intros ?????.
-    pose proof (@eta_comp (C op) SetoidCat _ _ eval' _ _ δ₂) as H.
-    simpl in H.
-    unfold compose in H.
-    rewrite <-H.
-    f_equiv.
-    split.
-    - apply (@fmap_comp _ _ Z' _ _ _ δ₂ δ₁ y).
-    - reflexivity.
-  Qed.
-  Next Obligation.
-    intros; simpl.
-    intros ???; simpl.
-    f_equiv; split; simpl; [| reflexivity].
-    now f_equiv.
-  Qed.
-  Next Obligation.
-    intros; simpl.
-    intros; simpl.
-    intros ???; simpl.
-    f_equiv.
-    split; [| reflexivity].
-    symmetry.
-    apply (@fmap_comp _ _ Z' _ _ _ δ f a).
-  Qed.
-  Next Obligation.
-    intros; simpl.
-    split.
-    - intros ? [? ?]; simpl.
-      unfold compose; simpl.
-      f_equiv.
-      split; [| reflexivity].
-      simpl.
-      rewrite (@fmap_id _ _ Z' X0 s).
-      reflexivity.
-    - intros; simpl.
-      intros ?????; simpl.
-      specialize (H B).
-      rewrite H.
-      rewrite (@eta_comp (C op) SetoidCat Z'
-                    (PArr Y X) x' X0 B δ a B ı v).
-      simpl.
-      now rewrite arrow_comp_id_r.
-  Qed.
-
-  Program Definition PSh_Exp {C} (X Y : PSh C)
-    : Exp PSh_hasBinProducts X Y :=
-    {|
-      exp_obj := PArr Y X;
-      eval := PArr_hasEval X Y;
-      exp_ump := PArr_ump X Y;
-    |}.
 
 End PSh_inst.
 
@@ -486,8 +519,8 @@ Section Sieves.
       apply H.
     - intros ??? H H' ??.
       etransitivity.
-      apply H.
-      apply H'.
+      + apply H.
+      + apply H'.
   Qed.
 
   Program Definition TotalSieve : SieveSetoid :=
@@ -526,62 +559,52 @@ Section SievesPSh.
   Context {C : Category}.
 
   Lemma PSh_mono_pointwise {X Y : PSh C} (f : X [⤷] Y) :
-    ∀ (x : C op) (D : SetoidCat) (y z : @Arr SetoidCat D (X x)), (monic f x) ∘ y ≡ (monic f x) ∘ z → y ≡ z.
+    ∀ (x : C op) (D : SetoidCat) (y z : D [→] (X x)), (monic f x) ∘ y ≡ (monic f x) ∘ z → y ≡ z.
   Proof.
     intros x D y z H t.
     simpl in H.
-    unshelve epose (T := _ : PSh C).
+    unshelve epose (T := {|
+                          FO (i : C op) := (@Arr C i x : SetoidCat);
+                          fmap A B := λₛ g :: @Arr C B A, _;
+                        |} : PSh C).
     {
-      unshelve econstructor.
-      - intros i.
-        apply (Hom (i, x)).
-      - intros; simpl.
-        unshelve econstructor.
-        + intros g.
-          unshelve econstructor.
-          * intros h.
-            apply (h ∘ g).
-          * intros; simpl.
-            now do 2 f_equiv.
-        + intros; simpl.
-          intros ?; now do 2 f_equiv.
-      - intros; simpl.
-        intros ?; now rewrite arrow_comp_id_r.
-      - intros; simpl.
-        intros ?; unfold compose; simpl.
-        symmetry.
-        apply arrow_comp_assoc.
+      refine (λₛ h :: @Arr C A x, h ∘ g).
+      intros; simpl; now do 2 f_equiv.
+    }
+    {
+      intros; simpl.
+      intros ?; now do 2 f_equiv.
+    }
+    {
+      intros; simpl.
+      intros ?; now rewrite arrow_comp_id_r.
+    }
+    {
+      intros; simpl.
+      intros ?; unfold compose; simpl.
+      symmetry.
+      apply arrow_comp_assoc.
     }
     simpl in T.
-    unshelve epose (g₁' := _ : @Arr (PSh C) T X).
+    unshelve epose (g₁' := (λₙ U :: C op, (λₛ g :: T U, (fmap X g (y t))) : T U [~>] X U) : T [↣] X).
     {
-      unshelve econstructor.
-      - intros U.
-        subst T.
-        simpl.
-        unshelve econstructor.
-        + intros g.
-          apply (fmap X g (y t)).
-        + intros; simpl.
-          now rewrite H0.
-      - intros; simpl.
-        intros ?; unfold compose; simpl.
-        apply (@fmap_comp (C op) SetoidCat X _ _ _ f0 a (y t)).
+      intros ?? G; simpl.
+      now rewrite G.
     }
-    unshelve epose (g₂' := _ : @Arr (PSh C) T X).
     {
-      unshelve econstructor.
-      - intros U.
-        subst T.
-        simpl.
-        unshelve econstructor.
-        + intros g.
-          apply (fmap X g (z t)).
-        + intros; simpl.
-          now rewrite H0.
-      - intros; simpl.
-        intros ?; unfold compose; simpl.
-        apply (@fmap_comp (C op) SetoidCat X _ _ _ f0 a (z t)).
+      intros ? ? h; simpl.
+      intros a; unfold compose; simpl.
+      apply (@fmap_comp (C op) SetoidCat X _ _ _ h a (y t)).
+    }
+    unshelve epose (g₂' := (λₙ U :: C op, (λₛ g :: T U, (fmap X g (z t))) : T U [~>] X U) : T [↣] X).
+    {
+      intros ?? G; simpl.
+      now rewrite G.
+    }
+    {
+      intros ? ? h; simpl.
+      intros a; unfold compose; simpl.
+      apply (@fmap_comp (C op) SetoidCat X _ _ _ h a (z t)).
     }
     pose proof (@monic_cancel (PSh C) X Y f T g₁' g₂') as G.
     subst T g₁' g₂'.
@@ -589,7 +612,7 @@ Section SievesPSh.
     unfold compose in *.
     assert (∀ (X0 : C) (a : X0 [~>] x), (η (monic f)) X0 (fmap X a (y t)) ≡ (η (monic f)) X0 (fmap X a (z t))) as G'.
     {
-      intros ??; simpl.
+      intros ? a; simpl.
       rewrite (@eta_comp _ _ _ _ (monic f) _ _ a (y t)).
       rewrite (@eta_comp _ _ _ _ (monic f) _ _ a (z t)).
       simpl.
@@ -652,11 +675,8 @@ Section SievesPSh.
     apply arrow_comp_assoc.
   Qed.
 
-  Program Definition PSh_Terminal : Terminal (PSh C)
-    := EmptyLimit (PSh_hasLimits Empty_diagram).
-
   Program Definition PSh_true_arr
-    : PSh_Terminal [~>] PSh_sieve
+    : 𝟙 @ (PSh C) [~>] PSh_sieve
     := λₙ _, λₛ _, TotalSieve.
   Next Obligation.
     intros; simpl.
@@ -668,7 +688,7 @@ Section SievesPSh.
   Qed.
 
   Program Definition PSh_true_arr_mono
-    : PSh_Terminal [⤷] PSh_sieve :=
+    : 𝟙 @ (PSh C) [⤷] PSh_sieve :=
     {|
       monic := PSh_true_arr;
     |}.
@@ -725,17 +745,17 @@ Section SievesPSh.
     : isPullback (PSh_char f)
         (PSh_true_arr)
         f
-        (projT1 (terminal_proj X)).
+        (! @ (PSh C)).
   Proof.
     unshelve econstructor.
     - unshelve econstructor.
       intros x.
       simpl.
-      intros; simpl.
+      intros a d f'; simpl.
       split; [constructor |].
       intros _.
-      exists (fmap X f0 a).
-      pose proof (eta_comp (monic f) _ _ f0 a) as H.
+      exists (fmap X f' a).
+      pose proof (eta_comp (monic f) _ _ f' a) as H.
       simpl in H; unfold compose in H; simpl in H.
       apply H.
     - intros.
@@ -747,8 +767,8 @@ Section SievesPSh.
           destruct (ID_epsilon _ _ J) as [J' _].
           apply J'.
         * intros; simpl.
-          destruct (ID_epsilon (X x)) as [X1 ?].
-          destruct (ID_epsilon (X x)) as [X2 ?].
+          destruct (ID_epsilon (X x)) as [X1 s].
+          destruct (ID_epsilon (X x)) as [X2 s0].
           rewrite (@fmap_id _ _ Y x ((η h) x a₂)) in s0.
           rewrite (@fmap_id _ _ Y x ((η h) x a₁)) in s.
           simpl in *.
@@ -760,7 +780,7 @@ Section SievesPSh.
             rewrite H0.
             reflexivity.
           }
-          unshelve epose proof (PSh_mono_pointwise f x (terminal_obj (limit_obj (Setoid_hasLimits Empty_diagram))) (λₛ i, X1) (λₛ i, X2)) as H2.
+          unshelve epose proof (PSh_mono_pointwise f x (𝟙 @ SetoidCat) (λₛ i, X1) (λₛ i, X2)) as H2.
           { intros; reflexivity. }
           { intros; reflexivity. }
           simpl in H2.
@@ -769,24 +789,24 @@ Section SievesPSh.
           -- intros ?; assumption.
           -- unshelve eapply (λₙ i :: ⌊ Empty_set ⌋, match i with end).
              intros [].
-      + intros; simpl.
-        intros; simpl.
+      + intros ?? f'; simpl.
+        intros a; simpl.
         unfold compose; simpl.
-        destruct (ID_epsilon (X Y0)) as [X1 ?].
-        destruct (ID_epsilon (X X0)) as [X2 ?].
-        rewrite (@fmap_id _ _ Y X0 ((η h) X0 a)) in s0.
-        rewrite (@fmap_id _ _ Y Y0 ((η h) Y0 (fmap W f0 a))) in s.
+        destruct (ID_epsilon _) as [X1 s].
+        destruct (ID_epsilon _) as [X2 s0].
+        rewrite (@fmap_id _ _ Y _ ((η h) _ a)) in s0.
+        rewrite (@fmap_id _ _ Y _ ((η h) _ (fmap W f' a))) in s.
         simpl in *.
         unfold id in *.
         simpl in *.
-        rewrite (@eta_comp _ _ _ _ h _ _ f0 a) in s.
+        rewrite (@eta_comp _ _ _ _ h _ _ f' a) in s.
         simpl in *.
         unfold compose in *; simpl in *.
         rewrite <-s0 in s; clear s0.
-        rewrite <-(@eta_comp _ _ _ _ (monic f) _ _ f0 X2) in s.
+        rewrite <-(@eta_comp _ _ _ _ (monic f) _ _ f' X2) in s.
         simpl in *.
         unfold compose in *; simpl in *.
-        unshelve epose proof (PSh_mono_pointwise f Y0 (terminal_obj (limit_obj (Setoid_hasLimits Empty_diagram))) (λₛ i, X1) (λₛ i, fmap X f0 X2)) as H2.
+        unshelve epose proof (PSh_mono_pointwise f _ (𝟙 @ SetoidCat) (λₛ i, X1) (λₛ i, fmap X f' X2)) as H2.
         { intros; reflexivity. }
         { intros; reflexivity. }
         simpl in H2.
@@ -821,7 +841,7 @@ Section SievesPSh.
           }
           simpl in H1.
           unfold compose in H1.
-          unshelve epose proof (PSh_mono_pointwise f T (terminal_obj (limit_obj (Setoid_hasLimits Empty_diagram))) (λₛ i, X1) (λₛ i, ((η x') T a))) as H2.
+          unshelve epose proof (PSh_mono_pointwise f T (𝟙 @ SetoidCat) (λₛ i, X1) (λₛ i, ((η x') T a))) as H2.
           { intros; reflexivity. }
           { intros; reflexivity. }
           simpl in H2.
@@ -831,4 +851,47 @@ Section SievesPSh.
              intros [].
   Qed.
 
+  Lemma PSh_char_unique {U X : PSh C} (f : U [⤷] X)
+    : unique_setoid (λ char : X [~>] PSh_sieve, isPullback char PSh_true_arr_mono f (! @ PSh C)) (PSh_char f).
+  Proof.
+    split.
+    - apply char_Pb.
+    - intros x' H.
+      simpl.
+      intros T TT d f'.
+      admit.
+  Admitted.
+
+  Global Instance PSh_hasSubobjectClassifier : hasSubobjectClassifier (PSh C).
+  Proof.
+    constructor.
+    unshelve econstructor.
+    - apply PSh_sieve.
+    - apply PSh_true_arr_mono.
+    - intros U X f.
+      exists (PSh_char f).
+      apply PSh_char_unique.
+  Defined.
+
 End SievesPSh.
+
+(* Section Regular. *)
+(*   Local Open Scope setoid_scope. *)
+(*   Local Open Scope cat_scope. *)
+(*   Context {C : Category}. *)
+
+(*   Record Regular := { *)
+(*       regular_carrier :> ∀ (A B : C), Setoid; *)
+(*       regular_mono : ∀ {A B : C}, regular_carrier A B → A [⤷] B; *)
+(*       is_regular {A B : C} (f : A [~>] B) := *)
+(*         ∃ (g : regular_carrier A B), f ≡ monic (regular_mono g); *)
+(*       regular_iso : ∀ {A B : C} (f : Isomorphism A B), *)
+(*         is_regular (iso1 f); *)
+(*       regular_comp : ∀ {A B D : C} (g : B [~>] D) (f : A [~>] B), *)
+(*         is_regular g → is_regular f → is_regular (g ∘ f); *)
+(*       regular_pb_stable : ∀ {W X Y Z : C} (a : W [~>] X) (b : X [~>] Z) *)
+(*                             (c : W [~>] Y) (d : Y [~>] Z) (pb : isPullback b d a c), *)
+(*         is_regular b → is_regular c; *)
+(*     }. *)
+
+(* End Regular. *)
