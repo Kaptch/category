@@ -1,0 +1,7 @@
+- ord sgdt
+- weak subobject (usual one can be shown to have the pb condition only in another topos, coq is not a topos)
+- some colimits for setoids
+- pointwise instances for fmap/eta rewriting rules
+- refactor nat sgdt
+- refactor the rest
+- adjunction for ofe(cofe)
