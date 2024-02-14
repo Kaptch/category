@@ -47,12 +47,12 @@ Section ordinals.
   (* better names*)
   Lemma ord_lt_leq α β γ: α ≺ β → β ⪯ γ → α ≺ γ.
   Proof.
-    intros ? [->|?]; eauto; etransitivity; eauto.
+    intros ? H; inversion H; subst; eauto; etransitivity; eauto.
   Qed.
 
   Lemma ord_leq_lt α β γ: α ⪯ β → β ≺ γ → α ≺ γ.
   Proof.
-    intros [->|?] ?; eauto; etransitivity; eauto.
+    intros H ?; inversion H; subst; eauto; etransitivity; eauto.
   Qed.
 
   Lemma succ_greater α: α ≺ succ α.
@@ -91,7 +91,9 @@ Section ordinals.
 
   Lemma succ_inj_leq α β: succ α ⪯ succ β → α ⪯ β.
   Proof.
-    intros [H % succ_inj|H % succ_inj_lt]; eauto.
+    intros H; inversion H; subst; eauto.
+    - by apply index_le_succ_inj in H.
+    - by apply index_le_succ_inj in H.
   Qed.
 
   Lemma zero_succ α: zero ≺ succ α.
@@ -197,14 +199,16 @@ Section ordinals.
       intros [x' Hstep]. edestruct embed as [y' [HS Hsim']]; first apply Hstep; first apply Hsim.
       exists (successors_of y' HS). apply succ_mono_leq; simpl.
       transitivity (acc_ord (embed_acc (a y' HS) x' Hsim')).
-      - left. apply acc_ord_pi.
+      - pose proof @acc_ord_pi.
+        rewrite (acc_ord_pi (Acc_inv (embed_acc (Acc_intro y a) x Hsim) Hstep) (embed_acc (a y' HS) x' Hsim')).
+        left.
       - apply IH.
     Qed.
 
     Lemma acc_ord_embed x y (b: Acc S y) (a: Acc R x): sim x y → acc_ord a ⪯ acc_ord b.
     Proof using R S X Y embed sim.
       intros Hsim. etransitivity; last eapply (acc_ord_embed' _ _ x Hsim).
-      left. apply acc_ord_pi.
+      now rewrite (acc_ord_pi a (embed_acc b x Hsim)).
     Qed.
 
     Lemma acc_ord_strict y y' (b: Acc S y') x (a: Acc R x):
@@ -469,12 +473,12 @@ Section ordinals.
 
     Lemma natural_addition_compat α β γ: α ⪯ β → α ⊕ γ ⪯ β ⊕ γ.
     Proof.
-      intros [->|]; eauto using natural_addition_strict_compat.
+      intros H; inversion H; subst; eauto using natural_addition_strict_compat.
     Qed.
 
     Lemma natural_addition_compat' α β γ: α ⪯ β → γ ⊕ α ⪯ γ ⊕ β.
     Proof.
-      intros [->|]; eauto using natural_addition_strict_compat'.
+      intros H; inversion H; subst; eauto using natural_addition_strict_compat'.
     Qed.
 
     Global Instance natural_addition_leq_proper: Proper ((@index_le ordI) ==> (@index_le ordI) ==> (@index_le ordI)) nadd.
@@ -484,7 +488,6 @@ Section ordinals.
 
     Lemma natural_addition_increase α β: α ⪯ α ⊕ β.
     Proof.
-      Set Printing All.
       replace α with (zero ⊕ α) at 1 by apply natural_addition_zero_left_id.
       rewrite [α ⊕ β]natural_addition_comm.
       apply natural_addition_compat, index_zero_minimum.
@@ -506,7 +509,10 @@ Section ordinals.
 
     Lemma natural_addition_cancel_leq α β γ: α ⊕ γ ⪯ β ⊕ γ → α ⪯ β.
     Proof.
-      intros [?%natural_addition_cancel |? % natural_addition_cancel_lt]; eauto.
+      intros H; inversion H; subst.
+      - apply natural_addition_cancel in H1; by subst.
+      - apply natural_addition_cancel_lt in H0.
+        by right.
     Qed.
 
 

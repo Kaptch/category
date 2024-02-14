@@ -97,13 +97,14 @@ Section ord_definition.
   Lemma ord_leq_unfold α β: α ⪯ β ↔ (α: set) ⊆ (β: set).
   Proof.
     split.
-    - intros [->|H].
+    - intros H; inversion H; subst.
       + by intros ?.
-      + apply el_succ_set_subs in H; auto.
-      eapply subs_trans; last apply H.
-      eauto using bunion_subs1, subseq.
+      + apply el_succ_set_subs in H0; auto.
+        eapply subs_trans; last apply H0.
+        eauto using bunion_subs1, subseq.
     - destruct (ordinal_linear α β) as [H|[H % ord_extensional|Hβα]]; auto.
-      intros Hαβ. exfalso. eapply one_cycles, Hαβ, Hβα.
+      + by subst.
+      + intros Hαβ. exfalso. eapply one_cycles, Hαβ, Hβα.
   Qed.
 
   (** Step-Index Instance *)
@@ -183,6 +184,8 @@ Section ord_definition.
     - apply succ_greater.
     - apply succ_least_greater.
     - apply succ_or_limit.
+    - intros x y p i.
+      now rewrite (proof_irrelevance _ p i).
     Qed.
 
     Canonical Structure ordI@{i j} : indexT@{j} := IndexT (Ord@{i}) ord_lt zero succ ord_index_mixin.
@@ -244,7 +247,7 @@ Section set_ordinal_lemmas.
     intros Hle. apply ord_leq_unfold.
     intros s [t [Hst Hf]] % zf_union. apply in_inv in Hf as [x ->].
     eapply ord_leq_unfold; [ | apply Hst]. destruct (index_le_eq_or_lt _ _ (Hle x)); eauto.
-    - now apply rc_refl.
+    - now subst.
     - now apply rc_subrel.
   Qed.
 

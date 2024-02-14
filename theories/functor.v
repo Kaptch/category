@@ -8,7 +8,7 @@ Section Functor.
   Local Open Scope setoid_scope.
   Local Open Scope cat_scope.
 
-  Polymorphic Record Functor (C : Category) (D : Category) :=
+  Record Functor (C : Category) (D : Category) : Type :=
     {
       FO :> C → D;
       fmap {A B} : ((A [~>] B)%cat [→] (FO A [~>] FO B)%cat)%setoid;
@@ -54,13 +54,14 @@ Section NatTrans.
   Local Open Scope cat_scope.
   Local Open Scope functor_scope.
 
-  Context {C D : Category}.
+  Context {C : Category}.
+  Context {D : Category}.
   Context (F G : C [⇒] D).
 
-  Polymorphic Record NatTrans :=
+  Record NatTrans :=
     {
       eta {X : C} :> (F X [~>] G X)%cat;
-      eta_comp {X Y : C} {f : X [~>] Y} : eta ∘ fmap F f ≡ fmap G f ∘ eta;
+      eta_comp {X Y : C} (f : X [~>] Y) : eta ∘ fmap F f ≡ fmap G f ∘ eta;
     }.
 
 End NatTrans.
@@ -148,7 +149,8 @@ Section FunCat.
   Local Open Scope cat_scope.
   Local Open Scope functor_scope.
 
-  Context {C' D' : Category}.
+  Context (C' : Category).
+  Context (D' : Category).
 
   Program Definition NatTransSetoid (F G : C' [⇒] D') : Setoid :=
     {|
@@ -206,7 +208,7 @@ Section FunCat.
   Qed.
 End FunCat.
 
-Notation "a [↣] b" := (@Arr FunCat a b) (at level 70, right associativity)
+Notation "a [↣] b" := (@Arr (FunCat _ _) a b) (at level 70, right associativity)
     : functor_scope.
 
 Program Definition constantFuncReindex {C : Category} {D : Category} {x x' : D}

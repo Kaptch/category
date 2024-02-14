@@ -20,12 +20,12 @@ Section Setoids.
   Qed.
   Next Obligation.
     intros; simpl.
-    now do 2 apply SetoidArrProper1.
+    apply SetoidArrProper; [reflexivity | now apply SetoidArrProper].
   Qed.
   Next Obligation.
     intros; simpl.
     intros.
-    now apply SetoidArrProper1.
+    apply SetoidArrProper; [reflexivity | now apply SetoidArrProper].
   Qed.
   Next Obligation.
     intros; simpl.

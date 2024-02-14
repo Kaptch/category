@@ -4,8 +4,10 @@ From category Require Import
                       category
                       sets
                       terminal
+                      initial
                       functor
                       limit
+                      colimit
                       prod
                       exp
                       classes.limits
@@ -28,7 +30,7 @@ Section SetoidInst.
     { intros; reflexivity. }
     simpl in *.
     assert (f ∘ x' ≡ f ∘ y') as H1.
-    { intros ?; simpl; unfold compose; assumption. }
+    { intros ?; assumption. }
     pose proof (@monic_cancel SetoidCat X Y f Z x' y' H1) as H2.
     specialize (H2 tt).
     simpl in H2.
@@ -45,7 +47,6 @@ Section SetoidInst.
     intros ?? f H Z g₁ g₂ G z.
     specialize (G z).
     simpl in G.
-    unfold compose in G; simpl in G.
     apply (H _ _ G).
   Qed.
 
@@ -61,7 +62,7 @@ Section SetoidInst.
     econstructor.
     * constructor.
     * intros; simpl.
-      intros ?; unfold const; simpl.
+      intros ?.
       now destruct (x' a).
   Qed.
 
@@ -80,9 +81,8 @@ Section SetoidInst.
   Qed.
   Next Obligation.
     intros; simpl.
-    intros ?; unfold compose; simpl.
+    intros ?.
     rewrite <-(eta_comp a X Y f tt).
-    simpl; unfold compose; simpl.
     reflexivity.
   Qed.
 
@@ -112,7 +112,6 @@ Section SetoidInst.
   Next Obligation.
     intros; simpl.
     intros ?; simpl.
-    unfold compose; simpl.
     reflexivity.
   Qed.
 
@@ -129,8 +128,6 @@ Section SetoidInst.
     * intros; simpl.
       intros ? ? []; simpl.
       rewrite (@cone_comp _ _ J X (Setoid_limit D J) x').
-      simpl.
-      unfold compose; simpl.
       reflexivity.
   Qed.
 
@@ -166,9 +163,9 @@ Section SetoidInst.
   Next Obligation.
     intros; simpl.
     split.
-    + split; intros ?; simpl; unfold compose; simpl; reflexivity.
+    + split; intros ?; reflexivity.
     + intros ? [G1 G2]; simpl; intros a; split; [rewrite G1 | rewrite G2];
-        unfold compose; simpl; reflexivity.
+        reflexivity.
   Defined.
 
   Global Instance Setoid_hasBinProductsInst : hasBinaryProducts SetoidCat.
@@ -214,14 +211,11 @@ Section SetoidInst.
     constructor.
     - simpl.
       intros; simpl.
-      unfold compose; simpl.
       destruct a as [a1 a2]; simpl.
       reflexivity.
     - intros; simpl.
       intros ? ?; simpl.
       rewrite H.
-      simpl.
-      unfold compose; simpl.
       reflexivity.
   Qed.
 

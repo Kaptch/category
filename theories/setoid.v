@@ -6,7 +6,6 @@ Delimit Scope setoid_scope with setoid.
 Local Open Scope setoid_scope.
 
 Section Setoids.
-
   Record Setoid :=
     {
       setoid_carrier :> Type;
@@ -20,7 +19,7 @@ Section Setoids.
   Global Instance EquivSetoid {S : Setoid} : Equivalence (@setoid_eq S)
     := @setoid_equiv S.
 
-  Record SetoidArrBundle (A B : Setoid) :=
+  Record SetoidArrBundle (A : Setoid) (B : Setoid) : Type :=
     {
       setoid_arr :> A → B;
       setoid_arr_eq : ∀ a₁ a₂, a₁ ≡ a₂ → (setoid_arr a₁) ≡ (setoid_arr a₂)
@@ -35,7 +34,7 @@ Section Setoids.
     - intros f g h EQ₁ EQ₂ a; etransitivity; [apply EQ₁ | apply EQ₂].
   Qed.
 
-  Program Definition SetoidArr (A B : Setoid) : Setoid :=
+  Program Definition SetoidArr (A : Setoid) (B : Setoid) : Setoid :=
     {|
       setoid_carrier := (SetoidArrBundle A B);
       setoid_eq f g := ∀ a, f a ≡ g a;
@@ -59,20 +58,48 @@ Section Setoids.
     intros; simpl; do 2 apply setoid_arr_eq; assumption.
   Qed.
 
-  Global Instance SetoidArrProper1 {A B : Setoid} {f : SetoidArr A B} :
-    Proper (@setoid_eq _ ==> @setoid_eq _) f.
-  Proof.
-    intros ???.
-    now apply setoid_arr_eq.
+  Program Definition flipS {A B C : Setoid}
+    : SetoidArr (SetoidArr A (SetoidArr B C)) (SetoidArr B (SetoidArr A C)) :=
+    {|
+      setoid_arr := λ f, {| setoid_arr := λ x, {| setoid_arr := λ y, f y x |} |};
+    |}.
+  Next Obligation.
+    intros; simpl.
+    now apply f.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros ?. now apply setoid_arr_eq.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros ??.
+    apply H.
   Qed.
 
-  Global Instance SetoidArrProper2 {A B : Setoid} :
+  Program Definition constS {A B : Setoid} (b : B) :
+    SetoidArr A B :=
+    {|
+      setoid_arr := λ _, b;
+    |}.
+  Next Obligation.
+    intros; reflexivity.
+  Qed.
+
+  Global Instance SetoidArrProper {A B : Setoid} :
     Proper (@setoid_eq (SetoidArr A B) ==> @setoid_eq A ==> @setoid_eq B)
       (setoid_arr A B).
   Proof.
-    intros ?? H ?? G.
-    rewrite G.
-    apply H.
+    intros ?? H t ? G.
+    rewrite (H t).
+    now apply setoid_arr_eq.
+  Qed.
+
+  Global Instance SetoidArrProper' {A B : Setoid} {f : SetoidArr A B} :
+    Proper (@setoid_eq _ ==> @setoid_eq _) f.
+  Proof.
+    intros ???.
+    now f_equiv.
   Qed.
 
   Program Definition SetoidProd (A : Setoid) (B : Setoid) : Setoid :=
@@ -106,10 +133,23 @@ Section Setoids.
     - now intros ??.
     - now intros ????.
   Qed.
+
+  Program Definition SubsetSetoid (X : Setoid) (P : X → Prop) : Setoid :=
+    {|
+      setoid_carrier := { x : X | P x };
+      setoid_eq a b := proj1_sig a ≡ proj1_sig b;
+    |}.
+  Next Obligation.
+    intros; split.
+    - intros ?; reflexivity.
+    - intros ???; now symmetry.
+    - intros ?????; etransitivity; eassumption.
+  Qed.
 End Setoids.
 
 Arguments setoid_eq {_}.
 Arguments setoid_equiv {_}.
+Arguments setoid_arr {_ _} _ _ &.
 
 Notation "a ≡ b" := (setoid_eq a b) (at level 70, no associativity)
     : setoid_scope.

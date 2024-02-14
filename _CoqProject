@@ -26,6 +26,11 @@ theories/pullback.v
 theories/adjunction.v
 theories/subobject.v
 theories/sets.v
+theories/colimit.v
+theories/initial.v
+theories/sum.v
+theories/sgdt/nat.v
+theories/sgdt/ord.v
 theories/instances/sets.v
 theories/instances/presheaf.v
 

@@ -16,6 +16,9 @@ From category Require Import
                       instances.sets
                       instances.presheaf.
 
+Declare Scope logic.
+Delimit Scope logic_scope with logic.
+
 Section IntLogic.
   Local Open Scope setoid_scope.
   Local Open Scope cat_scope.
@@ -262,22 +265,24 @@ Section IntLogic.
   Definition pure {Γ : PSh C} (P : Prop) : Γ [~>] Ω @ (PSh C)
     := pureI P ∘ (! @ (PSh C)).
 
-  Notation "'⊤ᵢ'" := true.
-  Notation "'⊥ᵢ'" := false.
-  Infix "≡ᵢ" := eq (at level 70, no associativity).
-  Infix "∧ᵢ" := conj (at level 80, right associativity).
-  Infix "∨ᵢ" := disj (at level 85, right associativity).
-  Infix "→ᵢ" := impl (at level 90, right associativity).
+  Notation "'⊤ᵢ'" := true : logic_scope.
+  Notation "'⊥ᵢ'" := false : logic_scope.
+  Infix "≡ᵢ" := eq (at level 70, no associativity) : logic_scope.
+  Infix "∧ᵢ" := conj (at level 80, right associativity) : logic_scope.
+  Infix "∨ᵢ" := disj (at level 85, right associativity) : logic_scope.
+  Infix "→ᵢ" := impl (at level 90, right associativity) : logic_scope.
   Notation "∀ᵢ[ A ] P" := (all A P)
-                            (at level 95, P at level 95, format "∀ᵢ[ A ]  P").
+                            (at level 95, P at level 95, format "∀ᵢ[ A ]  P") : logic_scope.
   Notation "∃ᵢ[ A ] P" := (exist A P)
-                            (at level 95, P at level 95, format "∃ᵢ[ A ]  P").
-  Notation "'⌜' P '⌝'" := (pure P).
+                            (at level 95, P at level 95, format "∃ᵢ[ A ]  P") : logic_scope.
+  Notation "'⌜' P '⌝'" := (pure P) : logic_scope.
 
   Definition entails {Γ : PSh C} (P Q : Γ [~>] Ω @ (PSh C)) : Prop :=
     ∀ n γ, P n γ n ı → Q n γ n ı.
 
-  Infix "⊢" := entails (at level 99, no associativity).
+  Infix "⊢" := entails (at level 99, no associativity) : logic_scope.
+
+  Local Open Scope logic_scope.
 
   Lemma entails_refl {Γ : PSh C} (P : Γ [~>] Ω @ (PSh C)) :
     P ⊢ P.
@@ -728,18 +733,6 @@ Section IntLogic.
     constructor.
   Qed.
 
-  Program Definition SubsetSetoid (X : Setoid) (P : X → Prop) : Setoid :=
-    {|
-      setoid_carrier := { x : X | P x };
-      setoid_eq a b := proj1_sig a ≡ proj1_sig b;
-    |}.
-  Next Obligation.
-    intros; split.
-    - intros ?; reflexivity.
-    - intros ???; now symmetry.
-    - intros ?????; etransitivity; eassumption.
-  Qed.
-
   Program Definition Subobject {X : PSh C} (P : X [~>] Ω @ (PSh C)) : PSh C
     := {|
       FO x := SubsetSetoid (X x) (λ y, P x y x ı);
@@ -856,3 +849,17 @@ Section IntLogic.
   Qed.
 
 End IntLogic.
+
+Notation "'⊤ᵢ'" := true : logic_scope.
+Notation "'⊥ᵢ'" := false : logic_scope.
+Infix "≡ᵢ" := eq (at level 70, no associativity) : logic_scope.
+Infix "∧ᵢ" := conj (at level 80, right associativity) : logic_scope.
+Infix "∨ᵢ" := disj (at level 85, right associativity) : logic_scope.
+Infix "→ᵢ" := impl (at level 90, right associativity) : logic_scope.
+Notation "∀ᵢ[ A ] P" := (all A P)
+                          (at level 95, P at level 95, format "∀ᵢ[ A ]  P") : logic_scope.
+Notation "∃ᵢ[ A ] P" := (exist A P)
+                          (at level 95, P at level 95, format "∃ᵢ[ A ]  P") : logic_scope.
+Notation "'⌜' P '⌝'" := (pure P) : logic_scope.
+
+Infix "⊢" := entails (at level 99, no associativity) : logic_scope.

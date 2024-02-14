@@ -1,26 +1,25 @@
 Require Export Utf8.
-Require Export CRelationClasses CEquivalence CMorphisms.
 Require Export RelationClasses Equivalence Morphisms Basics Setoid.
 Require Export Coq.Init.Logic.
 Require Export Coq.Structures.Equalities.
 Require Export Coq.Logic.Eqdep_dec Coq.Logic.ChoiceFacts.
 
-#[export] Set Default Goal Selector "!".
-
-Set Universe Polymorphism.
-
-Global Generalizable All Variables.
+Global Set Default Goal Selector "!".
+Global Set Default Proof Using "Type".
+Global Set Universe Polymorphism.
+Global Unset Intuition Negation Unfolding.
+Global Unset Universe Minimization ToSet.
 Global Unset Transparent Obligations.
 Global Obligation Tactic := idtac.
 
-Transparent compose.
+Global Transparent compose.
 
 #[projections(primitive=yes)]
-Polymorphic Record seal {A} (f : A) := { unseal : A; seal_eq : unseal = f }.
+  Record seal {A} (f : A) := { unseal : A; seal_eq : unseal = f }.
 Global Arguments unseal {_ _} _ : assert.
 Global Arguments seal_eq {_ _} _ : assert.
 
-Polymorphic Class Inhabited (A : Type) : Type := populate { inhabitant : A }.
+Class Inhabited (A : Type) : Type := populate { inhabitant : A }.
 Global Hint Mode Inhabited ! : typeclass_instances.
 Global Arguments populate {_} _ : assert.
 
@@ -35,11 +34,11 @@ Proof.
 Qed.
 
 Section Decision.
-  Polymorphic Class Decision (P : Prop) := decide : {P} + {¬P}.
+  Class Decision (P : Prop) := decide : {P} + {¬P}.
   Global Hint Mode Decision ! : typeclass_instances.
   Global Arguments decide _ {_} : simpl never, assert.
 
-  Polymorphic Class RelDecision {A B} (R : A → B → Prop) :=
+  Class RelDecision {A B} (R : A → B → Prop) :=
     decide_rel x y :> Decision (R x y).
   Global Hint Mode RelDecision ! ! ! : typeclass_instances.
   Global Arguments decide_rel {_ _} _ {_} _ _ : simpl never, assert.
@@ -54,7 +53,7 @@ Proof.
   intros [|] [|]; [now left | now right | now right | now left].
 Qed.
 
-Polymorphic Variant squash (A : Type) : Prop :=
+Variant squash (A : Type) : SProp :=
   | squash_intro: A → squash A.
 
 Definition proj_ex1 {A} {P : A → _} : (exists x : A, P x) → squash A.

@@ -15,7 +15,7 @@ From category Require Import
                       classes.subobject
                       instances.sets.
 
-Definition PSh (C : Category) : Category := @FunCat (C op)%cat SetoidCat.
+Definition PSh (C : Category) : Category := FunCat (C op)%cat SetoidCat.
 
 Section PSh_exp.
   Local Open Scope setoid_scope.
@@ -160,8 +160,7 @@ Section PSh_inst.
   Qed.
   Next Obligation.
     intros; simpl in *.
-    intros [? ?]; simpl;
-      unfold compose; simpl; reflexivity.
+    intros [? ?]; reflexivity.
   Qed.
   Next Obligation.
     intros; simpl in *.
@@ -169,8 +168,7 @@ Section PSh_inst.
   Qed.
   Next Obligation.
     intros; simpl in *.
-    intros [Q1 Q2]; unfold compose; simpl.
-    reflexivity.
+    intros [Q1 Q2]; reflexivity.
   Qed.
   Next Obligation.
     intros; simpl in *.
@@ -185,19 +183,16 @@ Section PSh_inst.
       + intros; simpl.
         intros; simpl.
         split.
-        * apply (@eta_comp _ _ _ _ (η p₁) _ _ f a).
-        * apply (@eta_comp _ _ _ _ (η p₂) _ _ f a).
+        * apply (eta_comp (η p₁) _ _ f a).
+        * apply (eta_comp (η p₂) _ _ f a).
     - split.
-      + intros; simpl; unfold compose; simpl.
-        split; reflexivity.
+      + intros; split; reflexivity.
       + intros; simpl.
         intros; simpl.
         split.
         * rewrite (proj1 H).
-          unfold compose; simpl.
           reflexivity.
         * rewrite (proj2 H).
-          unfold compose; simpl.
           reflexivity.
   Defined.
 
@@ -244,7 +239,7 @@ Section PSh_inst.
   Next Obligation.
     intros; simpl.
     intros ?????.
-    pose proof (@eta_comp (C op) SetoidCat _ _ eval' _ _ δ₂) as H.
+    pose proof (eta_comp eval' _ _ δ₂) as H.
     simpl in H.
     unfold compose in H.
     rewrite <-H.
@@ -282,8 +277,7 @@ Section PSh_inst.
       intros ?????; simpl.
       specialize (H B).
       rewrite H.
-      rewrite (@eta_comp (C op) SetoidCat Z'
-                    (PArr Y X) x' X0 B δ a B ı v).
+      rewrite (eta_comp x' X0 B δ a B ı v).
       simpl.
       now rewrite arrow_comp_id_r.
   Qed.
@@ -321,38 +315,28 @@ Section PSh_inst.
   Next Obligation.
     intros; simpl.
     intros ?; simpl.
-    unfold id; simpl.
-    simpl.
     etransitivity; [apply (@fmap_id _ _ J) |].
     reflexivity.
   Qed.
   Next Obligation.
     intros; simpl.
-    unfold compose; intros; simpl.
+    intros; simpl.
     rewrite (@fmap_comp D (PSh C) J _ _ _ f g c a).
-    simpl.
-    unfold compose; simpl.
     reflexivity.
   Qed.
 
   Program Definition PSh_limit {C} (D : Category) (J : D [⇒] (PSh C)) : PSh C :=
     {|
-      FO c := lim (PSh_limit_pointwise D J c) @ SetoidCat;
+      FO c := NatTransSetoid _ _ (constantSetFunc D) (PSh_limit_pointwise D J c);
       fmap A B := λₛ x :: @Arr C B A,
-        λₛ X :: lim PSh_limit_pointwise D J A @ SetoidCat,
-        λₙ y :: D, (* ((λₛ _ :: constantSetFunc D y, fmap (J y) x ((η X) y tt)) *)
-        (*   : @Arr SetoidCat (constantSetFunc D y) (J y B)) *) _;
+        λₛ X :: NatTransSetoid _ _ (constantSetFunc D) (PSh_limit_pointwise D J A),
+        λₙ y :: D, (λₛ T, (fmap (J y) x (X y tt)));
       (* wtf??? *)
     |}.
   Next Obligation.
-    intros; simpl in *.
-    refine (λₛ T, (fmap (J y) x (X y tt))).
-    intros; simpl; reflexivity.
-  Defined.
-  (* Next Obligation. *)
-  (*   intros; simpl. *)
-  (*   reflexivity. *)
-  (* Qed. *)
+    intros; simpl.
+    reflexivity.
+  Qed.
   Next Obligation.
     intros; simpl.
     intros []; unfold compose; simpl.
@@ -362,7 +346,7 @@ Section PSh_inst.
     simpl in H'.
     rewrite H'.
     f_equiv.
-    apply (@eta_comp D SetoidCat _ _ X _ _ f tt).
+    apply (eta_comp X _ _ f tt).
   Qed.
   Next Obligation.
     intros; simpl.
@@ -383,14 +367,12 @@ Section PSh_inst.
     intros ? ?; simpl.
     intros ? ? []; simpl.
     rewrite (@fmap_id (C op) SetoidCat (J _) A (_ _ tt)).
-    simpl; unfold id; simpl.
     reflexivity.
   Qed.
   Next Obligation.
     simpl.
     intros ? ? ? ? ? ? ? ? ? ? []; simpl.
     rewrite (@fmap_comp (C op) SetoidCat (J X) _ _ _ f g (a X tt)).
-    simpl; unfold compose; simpl.
     reflexivity.
   Qed.
 
@@ -430,9 +412,7 @@ Section PSh_inst.
     intros; simpl.
     intros; unfold compose; simpl.
     simpl in *.
-    rewrite (@eta_comp _ _ _ _ (η cone_nat X) _ _ f a b).
-    simpl.
-    unfold compose; simpl.
+    rewrite (eta_comp (η cone_nat X) _ _ f a b).
     reflexivity.
   Qed.
   Next Obligation.
@@ -444,11 +424,7 @@ Section PSh_inst.
   Next Obligation.
     intros; simpl.
     intros; simpl.
-    epose proof (@eta_comp (C op) SetoidCat _ (J X1) _ _ _ f) as H'.
-    simpl in H'.
-    unfold compose in H'.
-    simpl in H'.
-    rewrite H'.
+    rewrite (eta_comp (η (η cone_nat X) X1) _ _ f a).
     reflexivity.
   Qed.
   Next Obligation.
@@ -628,7 +604,7 @@ Section SievesPSh.
 
   Program Definition PSh_sieve : PSh C :=
     {|
-      FO x := SieveSetoid x;
+      FO x := @SieveSetoid C x;
       fmap A B := λₛ f :: @Arr C B A, λₛ s, λᵢ a, λₛ b, (s _ (f ∘ b));
     |}.
   Next Obligation.

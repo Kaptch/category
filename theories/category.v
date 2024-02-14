@@ -7,7 +7,7 @@ Delimit Scope cat_scope with cat.
 Local Open Scope setoid_scope.
 
 Section Category.
-  Polymorphic Record Category : Type :=
+  Record Category : Type :=
     {
       Obj :> Type;
       Arr : Obj → Obj → Setoid;
@@ -143,8 +143,8 @@ Section ProdCat.
     intros ???? [? ?] [? ?] [H1 H2]; simpl.
     simpl in *.
     split.
-    - now rewrite H1.
-    - now rewrite H2.
+    - now f_equiv.
+    - now f_equiv.
   Qed.
   Next Obligation.
     intros ??? [? ?] [? ?] [H1 H2]; simpl.

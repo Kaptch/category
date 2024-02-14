@@ -3,9 +3,9 @@ From iris.prelude Require Import options.
 
 (* (* TODO: move into stdpp *) *)
 
-Inductive rc {A} (R : A → A → Prop) (x : A) (y : A) : Prop :=
-| rc_refl: x = y → rc R x y
-| rc_subrel: R x y → rc R x y.
+Inductive rc {A} (R : A → A → Prop) (x : A) : A → Prop :=
+| rc_refl : rc R x x
+| rc_subrel y : R x y → rc R x y.
 Local Hint Constructors rc : core.
 
 Global Instance rc_reflexive {A} (R : A → A → Prop) : Reflexive (rc R).
@@ -23,7 +23,9 @@ Polymorphic Structure IndexMixin {A} {R: A → A → Prop} {zero: A} {succ: A �
     index_mixin_succ_least α β: R α β → rc R (succ α) β;
     index_mixin_dec_limit α: {β | α = succ β} +
                            (∀ β, R β α → R (succ β) α);
+    index_mixin_irrel α β: ProofIrrel (R α β);
   }.
+
 Global Arguments IndexMixin : clear implicits.
 
 Polymorphic Structure indexT@{i} :=
@@ -46,6 +48,10 @@ Polymorphic Definition index_le (SI : indexT) : relation SI := rc (index_lt SI).
 Notation "(⪯)" := (index_le _).
 Notation "α ⪯ β" := (index_le _ α β) (at level 80).
 
+Local Instance index_lt_irrel {SI : indexT} α β: ProofIrrel (@index_lt SI α β).
+Proof.
+  apply (index_mixin_irrel (index_mixin SI)).
+Qed.
 Local Instance index_le_refl {SI : indexT} : Reflexive (@index_le SI) := _.
 Local Instance index_lt_le_subrel {SI : indexT}: subrelation (@index_lt SI) (@index_le SI) := _.
 Lemma index_le_refl_auto {SI : indexT} (α β : SI) (H : α = β): α ⪯ β.
@@ -55,7 +61,11 @@ Global Hint Extern 2 (?a ⪯ ?b) => apply index_le_refl_auto : core.
 Global Hint Extern 1 (?a ⪯ ?b) => apply index_lt_le_subrel : core.
 
 Lemma index_le_eq_or_lt {SI : indexT} (α β : SI) : α ⪯ β → α = β ∨ α ≺ β.
-Proof. intros [H | H]; auto. Qed.
+Proof.
+  intros H.
+  inversion H; [now left |].
+  subst; now right.
+Qed.
 
 Section index_laws.
   Context {SI : indexT}.
@@ -97,8 +107,14 @@ Section StepIndexProperties.
   Global Instance: PreOrder (@index_le I).
   Proof.
     split; [by constructor|].
-    intros ??? [] []; subst; eauto.
-    right; transitivity y; auto.
+    intros ??? H.
+    inversion H; subst.
+    - intros; assumption.
+    - intros G.
+      inversion G; subst.
+      + assumption.
+      + right.
+        transitivity y; auto.
   Defined.
 
   Lemma index_le_total α β: {α ⪯ β} + {β ⪯ α}.
@@ -113,8 +129,10 @@ Section StepIndexProperties.
 
   Lemma index_zero_minimum α: zero ⪯ α.
   Proof.
-    destruct (index_le_total zero α) as [|[]]; eauto.
-    exfalso; eapply (index_zero_least); eauto.
+    destruct (index_le_total zero α) as [|]; eauto.
+    inversion i; subst.
+    - left.
+    - exfalso; eapply (index_zero_least); eauto.
   Qed.
 
   Lemma index_lt_zero_is_normal α: ¬ (α ≺ zero).
@@ -125,9 +143,14 @@ Section StepIndexProperties.
 
   Lemma index_zero_is_unique α: (∀ β, ¬ (β ≺ α)) → α = zero.
   Proof.
-    intros H; destruct (index_le_total α zero) as [[]|[]]; eauto; exfalso.
-    - by eapply index_lt_zero_is_normal.
-    - by eapply H.
+    intros H; destruct (index_le_total α zero) as [G|G]; eauto.
+    - inversion G; subst.
+      + reflexivity.
+      + exfalso.
+        by eapply index_lt_zero_is_normal.
+    - inversion G; subst.
+      + reflexivity.
+      + by exfalso; eapply H.
   Qed.
 
   Lemma index_is_zero α: {α = zero} + {zero ≺ α}.
@@ -154,7 +177,7 @@ Section StepIndexProperties.
   Proof. intros ? []; subst; eauto. by transitivity β. Qed.
 
   Lemma index_le_lt_trans α β γ: α ⪯ β → β ≺ γ → α ≺ γ.
-  Proof. intros [] ?; subst; eauto. by transitivity β. Qed.
+  Proof. intros [] ?; subst; eauto. by transitivity y. Qed.
 
   Lemma index_le_lt_contradict α α' : α ⪯ α' → α' ≺ α → False.
   Proof.
@@ -170,19 +193,31 @@ Section StepIndexProperties.
 
   Lemma index_le_ge_eq α α' : α ⪯ α' → α' ⪯ α → α = α'.
   Proof.
-    intros [-> | H1] [H2 | H2]; try by eauto.
-    exfalso; eapply index_lt_irrefl. by eapply index_lt_trans.
+    intros G; inversion G; subst.
+    - intros H; inversion H; subst.
+      + done.
+      + exfalso. eapply index_lt_irrefl.
+        apply H0.
+    - intros J; inversion J; subst.
+      + exfalso. eapply index_lt_irrefl.
+        apply H.
+      + exfalso. eapply index_lt_irrefl.
+        by eapply index_lt_trans.
   Qed.
 
   Lemma index_succ_iff α β: α ⪯ β ↔ α ≺ succ β.
   Proof.
     split; intros H.
-    - destruct H; subst. 2: transitivity β.
+    - destruct H; subst. 2: transitivity y.
       all: eauto; eapply index_succ_greater.
-    - destruct (index_le_total α β) as [|[|H1]]; eauto.
-      apply index_succ_least in H1.
-      eapply index_lt_le_trans in H1; eauto.
-      exfalso; eapply index_lt_irrefl; eauto.
+    - destruct (index_le_total α β); eauto.
+      inversion i; subst.
+      + done.
+      + apply index_succ_least in H0.
+        inversion H0; subst.
+        * exfalso; eapply index_lt_irrefl; eauto.
+        * eapply index_lt_le_trans in H1; eauto.
+          exfalso; eapply index_lt_irrefl; eauto.
   Qed.
 
   Lemma index_le_lt_eq_dec α β : α ⪯ β → {α ≺ β} + {α = β}.
@@ -200,7 +235,10 @@ Section StepIndexProperties.
 
   Lemma index_le_succ_mono α β: α ⪯ β → succ α ⪯ succ β.
   Proof.
-    intros [->|H % index_lt_succ_mono]; eauto.
+    intros H; inversion H; subst.
+    - done.
+    - right.
+      now apply index_lt_succ_mono.
   Qed.
 
   Lemma index_succ_greater' α β: α = succ β → β ≺ α.
@@ -228,9 +266,9 @@ Section StepIndexProperties.
 
   Lemma index_le_succ_inj α β : succ α ⪯ succ β → α ⪯ β.
   Proof.
-    intros [Heq | Hlt].
-    - apply index_succ_inj in Heq. by left.
-    - apply index_lt_succ_inj in Hlt. by right.
+    intros H; inversion H; subst.
+    - apply index_succ_inj in H1; subst. by left.
+    - apply index_lt_succ_inj in H0. by right.
   Qed.
 
   Lemma index_eq_dec α β: {α = β} + {α ≠ β}.
@@ -244,11 +282,13 @@ Section StepIndexProperties.
   Lemma index_succ_le_lt α β : succ α ⪯ β ↔ α ≺ β.
   Proof.
     split.
-    - intros [<- | H1]; [eapply index_succ_greater | ].
-      eapply index_lt_trans; [ eapply index_succ_greater | eauto ].
+    - intros H; inversion H; subst.
+      + eapply index_succ_greater.
+      + eapply index_lt_trans; [ eapply index_succ_greater | eauto ].
     - intros H. destruct (index_lt_eq_lt_dec (succ α) β) as [[Hlt | Heq] | Hgt].
       + by right.
-      + by left.
+      + subst.
+        by left.
       + exfalso. eapply index_succ_least in Hgt.
         apply index_le_succ_inj in Hgt.
         eapply index_lt_irrefl. by eapply index_lt_le_trans.
@@ -319,10 +359,34 @@ Section StepIndexProperties.
   Lemma index_min_mono_r γ β α: γ ⪯ β → index_min α γ ⪯ index_min α β.
   Proof.
     intros H. unfold index_min. destruct (index_le_total α γ) as [H1 | H1];
-    destruct (index_le_total α β) as [H2 | H2]; try by auto.
-    left. eapply index_le_ge_eq; auto. etransitivity; eauto.
+      destruct (index_le_total α β) as [H2 | H2]; try by auto.
+    erewrite index_le_ge_eq; [done | |].
+    - by transitivity α.
+    - done.
   Qed.
 End StepIndexProperties.
+
+Global Instance index_le_irrel {SI : indexT} (α β : SI) : ProofIrrel (α ⪯ β).
+Proof.
+  assert (∀ x y (p : x ⪯ y) y' (q : x ⪯ y'),
+            y = y' → eq_dep SI (index_le SI x) y p y' q) as aux.
+  { fix FIX 3. intros x ? [|y p] ? [|y' q].
+    - done.
+    - clear FIX. intros; exfalso.
+      subst.
+      eapply index_lt_irrefl.
+      apply q.
+    - clear FIX. intros; exfalso.
+      subst.
+      by eapply index_lt_irrefl.
+    - intros P.
+      destruct P.
+      rewrite (proof_irrel p q).
+      reflexivity.
+  }
+  intros p q.
+  by apply (Eqdep_dec.eq_dep_eq_dec (λ x y, index_eq_dec x y)), aux.
+Qed.
 
 Local Hint Immediate index_zero_minimum : core.
 Local Hint Resolve index_succ_greater : core.
@@ -622,6 +686,7 @@ Section nat_index.
     - intros [|n].
       + right; intros; lia.
       + left; by (exists n).
+    - apply Nat.lt_pi.
   Qed.
 
   Canonical Structure natI : indexT := IndexT nat lt 0 S nat_index_mixin.
@@ -672,24 +737,48 @@ Section pair_index.
     - intros [m1 n1] [m2 n2]; simpl; intros [|[]]; subst.
       + right. by left.
       + destruct (index_succ_least n1 n2); eauto; subst.
-        * by left.
-        * right. right. by split.
+        right. right. by split.
     - intros [m n]. destruct (index_dec_limit n) as [[n' ->]|].
       + left. by (exists (m, n')).
       + right; intros [m' n']; simpl; intros []; firstorder.
+    - intros [a b] [c d].
+      unfold pair_lt.
+      unfold ProofIrrel.
+      intros [H|H].
+      + intros [G|G].
+        * by rewrite (proof_irrel H G).
+        * destruct G as [-> ?].
+          exfalso.
+          by eapply index_lt_irrefl.
+      + destruct H as [-> H].
+        intros [G | G].
+        * exfalso.
+          by eapply index_lt_irrefl.
+        * destruct G.
+          rewrite (proof_irrel H i).
+          unshelve erewrite (proof_irrel e eq_refl).
+          -- apply eq_pi.
+             apply index_eq_dec.
+          -- reflexivity.
   Qed.
 
   Canonical Structure pairI : indexT := IndexT (I * J) pair_lt pair_zero pair_succ pair_index_mixin.
 
   Lemma pair_rc_right n m m': (n, m) ⪯ (n, m') ↔ m  ⪯ m'.
   Proof.
-    split; intros [Heq | Heq].
-    - injection Heq. auto.
-    - destruct Heq as [[]%index_lt_irrefl | H]. right; apply H.
-    - subst; auto.
-    - right. right; auto.
+    split; intros H.
+    - inversion H; subst.
+      + done.
+      + inversion H0; subst.
+        * exfalso; by eapply index_lt_irrefl.
+        * right.
+          destruct H1; done.
+    - inversion H; subst.
+      + done.
+      + right.
+        right.
+        by split.
   Qed.
-
 
   Global Instance: TransfiniteIndex pairI.
   Proof.
