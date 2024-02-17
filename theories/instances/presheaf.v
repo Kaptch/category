@@ -8,6 +8,7 @@ From category Require Import
                       limit
                       prod
                       exp
+                      hom
                       pullback
                       subobject
                       classes.limits
@@ -467,6 +468,19 @@ Section PSh_inst.
     apply PSh_hasLimits.
   Defined.
 
+  Program Definition Point {C : Category} {i : C}
+    : (𝟙 @ (PSh C)) i.
+  Proof.
+    unshelve econstructor.
+    - intros [].
+    - intros [].
+  Qed.
+
+  Lemma PointUnique {C : Category} {i : C} (γ : (𝟙 @ (PSh C)) i)
+    : γ ≡ Point.
+  Proof.
+    intros [].
+  Qed.
 End PSh_inst.
 
 Section Sieves.
@@ -719,7 +733,7 @@ Section SievesPSh.
 
   Lemma char_Pb {X Y : PSh C} (f : X [⤷] Y)
     : isPullback (PSh_char f)
-        (PSh_true_arr)
+        (PSh_true_arr_mono)
         f
         (! @ (PSh C)).
   Proof.
@@ -827,16 +841,66 @@ Section SievesPSh.
              intros [].
   Qed.
 
-  Lemma PSh_char_unique {U X : PSh C} (f : U [⤷] X)
-    : unique_setoid (λ char : X [~>] PSh_sieve, isPullback char PSh_true_arr_mono f (! @ PSh C)) (PSh_char f).
+  Lemma PSh_char_unique {Q P : PSh C} (g : Q [⤷] P)
+    : unique_setoid (λ char : P [~>] PSh_sieve, isPullback char PSh_true_arr_mono g (! @ PSh C)) (PSh_char g).
   Proof.
     split.
     - apply char_Pb.
-    - intros x' H.
+    - intros Θ H.
+      intros d x c f.
       simpl.
-      intros T TT d f'.
-      admit.
-  Admitted.
+      split.
+      + intros [H1 H2].
+        pose proof (proj2 (CS_comm _ _ (is_pb _ _ _ H) c H1 c ı) I) as KKK.
+        simpl in KKK.
+        unfold compose in KKK.
+        assert (KKK' : (η Θ) c (fmap P f x) c ı).
+        {
+          assert ((η Θ) c ((η (monic g)) c H1) c ı ≡ (η Θ) c (fmap P f x) c ı) as <-.
+          {
+            apply (setoid_arr_eq _ _ ((η Θ) c) ((η (monic g)) c H1) (fmap P f x) H2 c).
+          }
+          apply KKK.
+        }
+        rewrite (eta_comp Θ _ _ f x c ı) in KKK'.
+        simpl in KKK'.
+        rewrite arrow_comp_id_r in KKK'.
+        apply KKK'.
+      + intros H1.
+        simpl.
+        unshelve epose proof (is_pb_ump _ _ H (HomL c) _ (! @ PSh C) _) as HH.
+        {
+          unshelve econstructor.
+          - intros c'.
+            unshelve econstructor.
+            + intros f'.
+              simpl in f'.
+              apply (fmap P f' (fmap P f x)).
+            + intros ?? HEQ; simpl.
+              now rewrite HEQ.
+          - intros ?? f''; simpl.
+            intros a; unfold compose; simpl.
+            rewrite (@fmap_comp _ _ P _ _ _ f'' a (fmap P f x)).
+            simpl.
+            reflexivity.
+        }
+        {
+          constructor.
+          intros c' a' d' f'; simpl.
+          unfold compose; simpl.
+          split; [constructor | intros _].
+          rewrite (eta_comp Θ _ _ a' (fmap P f x) d' f').
+          rewrite (eta_comp Θ _ _ f x d' (a' ∘ f')).
+          simpl.
+          now apply sieve_closed.
+        }
+        destruct HH as [R [[HR1 HR2] HR3]].
+        exists (R c ı).
+        simpl in HR1.
+        rewrite <-(HR1 c ı).
+        rewrite (@fmap_id _ _ P c (fmap P f x)).
+        reflexivity.
+  Qed.
 
   Global Instance PSh_hasSubobjectClassifier : hasSubobjectClassifier (PSh C).
   Proof.

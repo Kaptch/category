@@ -725,12 +725,30 @@ Section IntLogic.
     - apply exist_intro.
   Qed.
 
-  Lemma soundness {Γ : PSh C} (n : C) (y : Γ n) {P : Prop} :
-    ⊤ᵢ ⊢ @pure Γ P → P.
+  Lemma soundness {P : Prop} (n : C) :
+    ⊤ᵢ ⊢ @pure (𝟙 @ (PSh C)) P → P.
   Proof.
     intros H.
-    apply (H n y).
+    apply (H n Point).
     constructor.
+  Qed.
+
+  Lemma soundness_eq {A B : PSh C} (t u : 𝟙 @ (PSh C) [~>] A) :
+    ⊤ᵢ ⊢ t ≡ᵢ u → t ≡ u.
+  Proof.
+    intros H.
+    intros x.
+    assert (G : (η ⊤ᵢ) x Point x ı).
+    { constructor. }
+    pose proof (H x Point G) as J.
+    simpl in J.
+    rewrite (@fmap_id _ _ A x ((η t) x Point)) in J.
+    rewrite (@fmap_id _ _ A x ((η u) x Point)) in J.
+    simpl in J.
+    unfold id in J.
+    intros x'.
+    rewrite PointUnique.
+    apply J.
   Qed.
 
   Program Definition Subobject {X : PSh C} (P : X [~>] Ω @ (PSh C)) : PSh C
@@ -847,6 +865,40 @@ Section IntLogic.
       unfold compose; simpl.
       reflexivity.
   Qed.
+
+  Inductive LogicSyntax : ∀ (Γ : PSh C), Type :=
+  | LS_pure Γ (p : Prop) : LogicSyntax Γ
+  | LS_false Γ : LogicSyntax Γ
+  | LS_true Γ : LogicSyntax Γ
+  | LS_eq Γ {A} (a b : Γ [~>] A) : LogicSyntax Γ
+  | LS_xist Γ {A} (a : LogicSyntax (Γ ×ₒ A @ PSh C)) : LogicSyntax Γ
+  | LS_all Γ {A} (a : LogicSyntax (Γ ×ₒ A @ PSh C)) : LogicSyntax Γ
+  | LS_conj Γ (a b : LogicSyntax Γ) : LogicSyntax Γ
+  | LS_disj Γ (a b : LogicSyntax Γ) : LogicSyntax Γ
+  | LS_impl Γ (a b : LogicSyntax Γ) : LogicSyntax Γ.
+
+  (* Program Definition LogicF : PSh (PSh C) := *)
+  (*   {| *)
+  (*     FO X := [ LogicSyntax X ]; *)
+  (*     fmap A B := λₛ f, λₛ x, _; *)
+  (*   |}. *)
+  (* Next Obligation. *)
+  (*   intros A B f x; simpl. *)
+
+
+  Fixpoint LogicInterp {Γ : PSh C} (t : LogicSyntax Γ) :
+    Γ [~>] (Ω @ PSh C) :=
+    match t in (LogicSyntax Γ') return (Γ' [~>] (Ω @ PSh C)) with
+    | LS_pure Γ' p => pure p
+    | LS_false Γ' => false
+    | LS_true Γ' => true
+    | LS_eq Γ' a b => eq a b
+    | LS_xist Γ' a => exist _ (LogicInterp a)
+    | LS_all Γ' a => all _ (LogicInterp a)
+    | LS_conj Γ' a b => conj (LogicInterp a) (LogicInterp b)
+    | LS_disj Γ' a b => disj (LogicInterp a) (LogicInterp b)
+    | LS_impl Γ' a b => impl (LogicInterp a) (LogicInterp b)
+    end.
 
 End IntLogic.
 
