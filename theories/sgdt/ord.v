@@ -35,14 +35,8 @@ Section Ord.
   Program Definition OrdCatArrSetoid (A B : SI) : Setoid :=
     {|
       setoid_carrier := A ⪯ B;
-      setoid_eq (X Y : A ⪯ B) := True;
+      setoid_eq (X Y : A ⪯ B) := X = Y;
     |}.
-  Next Obligation.
-    intros; split.
-    - intros ?; constructor.
-    - intros ???; constructor.
-    - intros ?????; constructor.
-  Qed.
 
   Program Definition OrdCat : Category :=
     {|
@@ -53,31 +47,27 @@ Section Ord.
     |}.
   Next Obligation.
     intros; simpl in *.
-    constructor.
+    apply proof_irrel.
   Qed.
   Next Obligation.
     intros; simpl in *.
-    constructor.
+    intros ?.
+    apply proof_irrel.
   Qed.
   Next Obligation.
     intros; simpl in *.
-    constructor.
+    apply proof_irrel.
   Qed.
   Next Obligation.
     intros; simpl in *.
-    constructor.
+    apply proof_irrel.
   Qed.
   Next Obligation.
     intros; simpl in *.
-    constructor.
+    apply proof_irrel.
   Qed.
 
 End Ord.
-
-Section Transfinite.
-
-
-End Transfinite.
 
 Section ToposOfTrees.
   Local Open Scope setoid_scope.
@@ -101,103 +91,82 @@ Section ToposOfTrees.
     intros; reflexivity.
   Defined.
 
-  Program Definition LaterObj (X : tree) (i : SI) : Setoid
+  Program Definition LaterSetoid (X : tree) (i : SI) : Setoid
     := (@index_rec SI (const Setoid)
           ([ unit ])
           (λ i' _, X i')
           (λ α _, X (limit_index α)) i).
 
-  Program Definition Next' (X : tree) : ∀ (i : SI), (X i) [→] LaterObj X i.
+  Definition LaterFmap (X : tree) (n m : OrdCat SI) (H : n [~>] m) :
+    LaterSetoid X m [→] LaterSetoid X n.
   Proof.
-    apply (@index_rec SI (λ (i : SI), (X i) [→] LaterObj X i)).
-    - rewrite /LaterObj index_rec_zero.
-      refine (λₛ _, (tt : [ unit ])).
-      intros; reflexivity.
-    - intros α H.
-      rewrite /LaterObj index_rec_succ.
-      apply (functor.fmap X (rc_subrel _ _ _ (index_succ_greater α))).
-    - intros α H.
-      rewrite /LaterObj index_rec_lim.
-      apply idS.
+    simpl.
+    unshelve eapply (@index_rec SI
+                       (λ (β : OrdCat SI), ∀ (α : OrdCat SI), (α [~>] β) [→] LaterSetoid X β [→] LaterSetoid X α) _ _ _ _ _ H).
+    - unshelve econstructor.
+      + intros G.
+        assert (α = zero) as ->; [| refine (λₛ x, x); intros; assumption ].
+        apply index_zero_is_unique.
+        intros β contra.
+        apply (index_lt_zero_is_normal β (index_lt_le_trans _ _ _ contra G)).
+      + intros; simpl.
+        now rewrite (proof_irrel a₁ a₂).
+    - intros.
+      unshelve econstructor.
+      + intros G.
+        unfold LaterSetoid at 1.
+        erewrite index_rec_succ; [| apply _].
+        simpl in *.
+        apply index_le_lt_eq_dec in G.
+        destruct G as [G | HEQ].
+        * unshelve econstructor.
+          -- intros XX.
+             apply X0.
+             ++ admit.
+             ++ admit.
+
+        inversion G.
   Defined.
 
-  Program Definition LaterRestrZero (X : tree) : ∀ α : OrdCat SI, (α [~>] zero) [→] LaterObj X zero [→] LaterObj X α
-  := λ α, λₛ H, _.
+  Program Definition LaterRestrSucc (X : tree) :
+    ∀ α : OrdCat SI,
+    (∀ β : OrdCat SI, β ⪯ α → LaterSetoid X α [→] LaterSetoid X β)
+    → ∀ β : OrdCat SI, (β [~>] succ α) [→] LaterSetoid X (succ α) [→] LaterSetoid X β
+  := λ α H β, λₛ H, _.
   Next Obligation.
-    intros X α H.
-    assert (α = zero) as ->; [| refine (λₛ x, x); intros; assumption ].
-    simpl in H.
-    apply index_zero_is_unique.
-    intros β contra.
-    apply (index_lt_zero_is_normal β (index_lt_le_trans _ _ _ contra H)).
+    intros X α H β G.
+    unfold LaterSetoid at 1.
+    erewrite index_rec_succ; [| apply _].
+    simpl in *.
+    destruct (index_le_lt_eq_dec β (succ α) G) as [K | K].
+    - rewrite <-index_succ_iff in K.
+      admit.
+      (* pose proof (H β K). *)
+      (* unshelve econstructor. *)
+      (* + intros X1. *)
+      (*   apply X0. *)
+      (*   apply X0. *)
+      (*   now apply Next'. *)
+      (* + intros; simpl. *)
+      (*   now do 2 f_equiv. *)
+    - rewrite K.
+      unfold LaterSetoid at 1.
+      erewrite index_rec_succ; [| apply _].
+      apply idS.
   Defined.
   Next Obligation.
     intros; simpl.
     now rewrite (proof_irrel a₁ a₂).
   Qed.
 
-  Program Definition LaterRestrSucc (X : tree) :
-    ∀ α : OrdCat SI,
-    (∀ β : OrdCat SI, β ⪯ α → LaterObj X α [→] LaterObj X β)
-    → ∀ β : OrdCat SI, (β [~>] succ α) [→] LaterObj X (succ α) [→] LaterObj X β
-  := λ α H β, λₛ H, _.
-  Next Obligation.
-    intros X α H β G.
-    unfold LaterObj at 1.
-    erewrite index_rec_succ; [| apply _].
-    simpl in *.
-    destruct (index_le_lt_eq_dec β (succ α) G) as [K | K].
-    - rewrite <-index_succ_iff in K.
-      pose proof (H β K).
-      unshelve econstructor.
-      + intros X1.
-        apply X0.
-        now apply Next'.
-      + intros; simpl.
-        now do 2 f_equiv.
-    - rewrite K.
-      unfold LaterObj at 1.
-      erewrite index_rec_succ; [| apply _].
-      apply idS.
-  Defined.
-  Next Obligation.
-    intros; simpl.
-    intros a.
-    unfold LaterRestrSucc_obligation_1.
-    simpl in *.
-    case_match.
-    - case_match.
-      + unshelve erewrite (proof_irrel i i0).
-        * apply index_lt_irrel.
-        * reflexivity.
-      + subst.
-        exfalso.
-        rewrite (proof_irrel a₁ a₂) in H1.
-        rewrite H2 in H1.
-        done.
-    - case_match.
-      + subst.
-        exfalso.
-        rewrite (proof_irrel a₁ a₂) in H1.
-        rewrite H2 in H1.
-        done.
-      + subst.
-        unshelve erewrite (proof_irrel e0 eq_refl).
-        * eapply eq_pi.
-          apply index_eq_dec.
-        * unfold eq_rect_r.
-          simpl.
-          reflexivity.
-  Qed.
-
   Program Definition LaterRestrLim (X : tree) :
     ∀ α : limit_idx,
-    (∀ β : OrdCat SI, β ≺ α → ∀ α0 : OrdCat SI, (α0 [~>] β) [→] LaterObj X β [→] LaterObj X α0)
-    → ∀ α0 : OrdCat SI, (α0 [~>] limit_index α) [→] LaterObj X α [→] LaterObj X α0
+    (∀ β : OrdCat SI, β ≺ α → ∀ α0 : OrdCat SI, (α0 [~>] β) [→] LaterSetoid X β [→] LaterSetoid X α0)
+    → ∀ α0 : OrdCat SI, (α0 [~>] limit_index α) [→] LaterSetoid X α [→] LaterSetoid X α0
   := λ α H β, λₛ H', _.
   Next Obligation.
     intros X α H β G.
-    unfold LaterObj at 1.
+    unfold LaterSetoid at 1.
     erewrite index_rec_lim; [| apply _].
     simpl in *.
     destruct (index_le_lt_eq_dec β α G) as [K | K].
@@ -247,22 +216,22 @@ Section ToposOfTrees.
           reflexivity.
   Admitted.
 
-  Program Definition Later (X : tree) : tree :=
+  Program Definition LaterObj (X : tree) : tree :=
     {|
-      FO A := LaterObj X A;
+      FO A := LaterSetoid X A;
       functor.fmap A B := _;
     |}.
   Next Obligation.
     intros.
     apply (@index_rec SI
-             (λ (β : OrdCat SI), ∀ (α : OrdCat SI), (α [~>] β) [→] LaterObj X β [→] LaterObj X α) (LaterRestrZero X) (LaterRestrSucc X) (LaterRestrLim X)).
+             (λ (β : OrdCat SI), ∀ (α : OrdCat SI), (α [~>] β) [→] LaterSetoid X β [→] LaterSetoid X α) (LaterRestrZero X) (LaterRestrSucc X) (LaterRestrLim X)).
   Defined.
   Next Obligation.
     intros X.
     intros; simpl in *.
     apply (@index_rec SI (λ A : OrdCat SI op, (λ A0 B : OrdCat SI op, Later_obligation_1 X A0 B) A A ı ≡ ı)).
     - simpl.
-      unfold LaterObj at 1.
+      unfold LaterSetoid at 1.
       simpl.
       intros a.
       unfold Later_obligation_1.
@@ -279,7 +248,7 @@ Section ToposOfTrees.
       + simpl.
         done.
     - simpl.
-      unfold LaterObj at 1.
+      unfold LaterSetoid at 1.
       simpl.
       intros ? ? a.
       unfold Later_obligation_1.
@@ -324,5 +293,61 @@ Section ToposOfTrees.
       unfold eq_rect_r.
       simpl.
       unfold Next'.
+
+
+      Later
+
+        NextFun
+
+          next
+
+  (* Program Definition NextFun (X : tree) : ∀ (i : nat), (X i) [→] ▶ X i *)
+  (* := λ i, λₛ T, (functor.fmap (▶ X) (le_S i i (le_n i)) T). *)
+  (* Next Obligation. *)
+  (*   intros; simpl. *)
+  (*   now f_equiv. *)
+  (* Qed. *)
+
+  (* Program Definition next {X : tree} : X [↣] (▶ X) *)
+  (*   := λₙ n, NextFun X n. *)
+  (* Next Obligation. *)
+  (*   - intros; simpl. *)
+  (*     intros a. *)
+  (*     destruct X0, Y. *)
+  (*     + simpl. *)
+  (*       elim_eq_irrel. *)
+  (*       reflexivity. *)
+  (*     + exfalso. *)
+  (*       simpl in *. *)
+  (*       lia. *)
+  (*     + reflexivity. *)
+  (*     + pose proof (@fmap_comp _ _ X _ _ _ (le_S_n Y (S Y) (le_S (S Y) (S Y) (le_n (S Y)))) f) as H. *)
+  (*       simpl in H. *)
+  (*       rewrite <-H. *)
+  (*       pose proof (@fmap_comp _ _ X _ _ _ (le_S_n Y X0 f) (le_S_n X0 (S X0) (le_S (S X0) (S X0) (le_n (S X0))))) as H'. *)
+  (*       simpl in H'. *)
+  (*       rewrite <-H'. *)
+  (*       do 2 f_equiv. *)
+  (*       apply proof_irrel. *)
+  (* Qed. *)
+
+
+
+
+
+  (* (* Program Definition Next' (X : tree) : ∀ (i : SI), (X i) [→] LaterSetoid X i. *) *)
+  (* (* Proof. *) *)
+  (* (*   apply (@index_rec SI (λ (i : SI), (X i) [→] LaterSetoid X i)). *) *)
+  (* (*   - rewrite /LaterSetoid index_rec_zero. *) *)
+  (* (*     refine (λₛ _, (tt : [ unit ])). *) *)
+  (* (*     intros; reflexivity. *) *)
+  (* (*   - intros α H. *) *)
+  (* (*     rewrite /LaterSetoid index_rec_succ. *) *)
+  (* (*     apply (functor.fmap X (rc_subrel _ _ _ (index_succ_greater α))). *) *)
+  (* (*   - intros α H. *) *)
+  (* (*     rewrite /LaterSetoid index_rec_lim. *) *)
+  (* (*     apply idS. *) *)
+  (* (* Defined. *) *)
+
 
 End ToposOfTrees.

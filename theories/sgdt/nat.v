@@ -31,46 +31,36 @@ Section Nat.
   Program Definition NatCatArrSetoid (A B : nat) : Setoid :=
     {|
       setoid_carrier := (A <= B);
-      setoid_eq (X Y : (A <= B)) := True;
+      setoid_eq (X Y : (A <= B)) := X = Y;
     |}.
-  Next Obligation.
-    intros; split.
-    - intros ?; constructor.
-    - intros ???; constructor.
-    - intros ?????; constructor.
-  Qed.
 
   Program Definition NatCat : Category :=
     {|
       Obj := nat;
       Arr A B := NatCatArrSetoid A B;
       arrow_id A := (le_n A);
-      arrow_comp A B C := (λₛ f, λₛ g, _)%setoid;
+      arrow_comp A B C := (λₛ f, λₛ g, (Nat.le_trans _ _ _ g f))%setoid;
     |}.
   Next Obligation.
-    intros.
-    simpl in *.
-    apply (Nat.le_trans _ _ _ g f).
-  Defined.
-  Next Obligation.
     intros; simpl.
-    constructor.
+    apply proof_irrel.
   Qed.
   Next Obligation.
     intros; simpl in *.
-    constructor.
+    intros.
+    apply proof_irrel.
   Qed.
   Next Obligation.
     intros; simpl in *.
-    constructor.
+    apply proof_irrel.
   Qed.
   Next Obligation.
     intros; simpl in *.
-    constructor.
+    apply proof_irrel.
   Qed.
   Next Obligation.
     intros; simpl in *.
-    constructor.
+    apply proof_irrel.
   Qed.
 
   Definition tree := PSh NatCat.
@@ -155,7 +145,7 @@ Section Nat.
       rewrite <-H.
       simpl.
       do 2 f_equiv.
-      constructor.
+      apply proof_irrel.
   Qed.
 
   Program Definition Later : tree [⇒] tree :=
@@ -212,8 +202,9 @@ Section Nat.
   Next Obligation.
     - intros; simpl.
       intros a.
-      destruct X0, Y; simpl in *.
-      + elim_eq_irrel.
+      destruct X0, Y.
+      + simpl.
+        elim_eq_irrel.
         reflexivity.
       + exfalso.
         simpl in *.
@@ -226,25 +217,11 @@ Section Nat.
         simpl in H'.
         rewrite <-H'.
         do 2 f_equiv.
-        constructor.
+        apply proof_irrel.
   Qed.
 
   Definition Contractive (X Y : tree) (ϕ : X [↣] Y) :=
     sigT (λ g : ▶ X [↣] Y, ϕ ≡ g ∘ next).
-
-  Program Definition Point {i : nat}
-    : (𝟙 @ tree) i.
-  Proof.
-    unshelve econstructor.
-    - intros [].
-    - intros [].
-  Qed.
-
-  Lemma PointUnique {i : nat} (γ : (𝟙 @ tree) i)
-    : γ ≡ Point.
-  Proof.
-    intros [].
-  Qed.
 
   Program Fixpoint FixPointwise (X : tree)
     (ϕ : X [↣] X)
@@ -339,7 +316,7 @@ Section Nat.
       intros x' G.
       intros i.
       intros ?.
-      rewrite (@PointUnique i a); clear a.
+      rewrite (@PointUnique NatCat i a); clear a.
       induction i.
       + simpl.
         rewrite <-(G 0 Point).
@@ -370,7 +347,7 @@ Section Nat.
   Proof.
     intros x.
     intros a.
-    rewrite (@PointUnique x ((η (@arrow_id (FunCat _ _) ((𝟙 @ tree)))) x a)).
+    rewrite (@PointUnique NatCat x ((η (@arrow_id (FunCat _ _) ((𝟙 @ tree)))) x a)).
     apply PointUnique.
   Qed.
 
@@ -380,7 +357,7 @@ Section Nat.
     destruct x as [| x].
     - now destruct 1.
     - intros a.
-      rewrite (@PointUnique x ((η (@arrow_id (FunCat _ _) ((𝟙 @ tree)))) x a)).
+      rewrite (@PointUnique NatCat x ((η (@arrow_id (FunCat _ _) ((𝟙 @ tree)))) x a)).
       apply PointUnique.
   Qed.
 
@@ -411,7 +388,7 @@ Section Nat.
          (λ x,
            bin_prod_obj _ _ ((▶ X) ×ₒ (▶ Y) @ tree) x
              [~>]
-             (▶ (bin_prod_obj _ _ (X ×ₒ Y @ tree))) x)
+             (▶ ((X ×ₒ Y @ tree))) x)
          (constS _) _ n).
   Next Obligation.
     intros; constructor.
@@ -437,15 +414,11 @@ Section Nat.
   Qed.
 
   Definition LaterApp {X Y} : ▶ (X ⇒ Y @ tree) [~>] ▶ X ⇒ ▶ Y @ tree
-    := Curry (functor.fmap Later (eval Y X ((X ⇒ Y @ tree))) ∘ LaterProd).
+    := Curry (functor.fmap Later eval ∘ LaterProd).
 
-  Definition fixI {X} : ▶ X ⇒ X @ tree [~>] X.
-  Proof.
-    apply
-      (eval _ _ _ ∘ ⟨(mfix
-                        (Curry
-                           (eval _ _ _ ∘ (⟨bin_proj_arr₂ _ _ _ , eval _ _ _ ∘ ⟨ LaterApp ×ₐ next ⟩⟩))) ∘ (! @ tree)), ı ⟩).
-  Defined.
+  Definition fixI {X} : ▶ X ⇒ X @ tree [~>] X
+    := (eval
+         ∘ ⟨(mfix (λ⟨eval ∘ (⟨π₂ , eval ∘ ⟨ LaterApp ×ₐ next ⟩⟩)⟩) ∘ (! @ tree)), ı ⟩).
 
   Program Definition laterI : Ω @ tree [~>] Ω @ tree :=
     λₙ x, λₛ y, λᵢ p, λₛ t,
@@ -471,8 +444,7 @@ Section Nat.
         lia.
       + pose proof (@sieve_closed _ _ y d e (le_Sn_le d x f) (le_S_n _ _ g) H) as J.
         simpl in J.
-        rewrite (proof_irrel (le_Sn_le e x (NatCat_obligation_1 (S e) (S d) x f g))
-                   (NatCat_obligation_1 e d x (le_Sn_le d x f) (le_S_n e d g))).
+        erewrite proof_irrel.
         apply J.
   Qed.
   Next Obligation.
@@ -487,9 +459,9 @@ Section Nat.
     intros ???.
     destruct d; simpl.
     - reflexivity.
-    - rewrite (proof_irrel
-                 (NatCat_obligation_1 d Y X f (le_Sn_le d Y f0))
-                 (le_Sn_le d X (NatCat_obligation_1 (S d) Y X f f0))).
+    - erewrite (proof_irrel
+                 (Nat.le_trans d Y X (le_Sn_le d Y f0) f)
+                 (le_Sn_le d X (Nat.le_trans (S d) Y X f0 f))).
       reflexivity.
   Qed.
 
@@ -505,8 +477,7 @@ Section Nat.
     - constructor.
     - pose proof (@sieve_closed _ _ ((η P) (S n) x) (S n) n ı (le_Sn_le n (S n) (le_n (S n))) Px) as J.
       simpl in J.
-      rewrite (proof_irrel (le_Sn_le n (S n) (le_n (S n)))
-                 (NatCat_obligation_1 n (S n) (S n) (le_n (S n)) (le_Sn_le n (S n) (le_n (S n))))).
+      erewrite proof_irrel.
       apply J.
   Qed.
 
@@ -519,14 +490,13 @@ Section Nat.
     - specialize (H n (functor.fmap Γ (le_Sn_le n (S n) (le_n (S n))) x)).
       simpl in H.
       rewrite (proof_irrel (le_Sn_le n (S n) (le_n (S n)))
-                 (NatCat_obligation_1 n n (S n) (le_Sn_le n (S n) (le_n (S n))) (le_n n))).
+                 (Nat.le_trans n n (S n) (le_n n) (le_Sn_le n (S n) (le_n (S n))))).
       apply (proj1 (eta_comp Q _ _ (le_Sn_le n (S n) (le_n (S n))) x n ı)).
       simpl.
       apply H.
       apply (proj2 (eta_comp P _ _ (le_Sn_le n (S n) (le_n (S n))) x n ı)).
       simpl.
-      rewrite (proof_irrel (NatCat_obligation_1 n n (S n) (le_Sn_le n (S n) (le_n (S n))) (le_n n))
-                 (le_Sn_le n (S n) (le_n (S n)))).
+      erewrite proof_irrel.
       apply Px.
   Qed.
 
@@ -549,9 +519,7 @@ Section Nat.
       intros [].
     - rewrite <-KKK.
       apply K.
-      rewrite (proof_irrel
-                 (NatCat_obligation_1 n n (S n) (le_Sn_le n (S n) (le_n (S n))) (le_n n))
-                 (le_Sn_le n (S n) (le_n (S n)))).
+      erewrite proof_irrel.
       apply J.
   Qed.
 
@@ -566,9 +534,7 @@ Section Nat.
       pose proof (IHn (functor.fmap Γ (le_Sn_le n (S n) (le_n (S n))) x)) as J.
       pose proof (proj1 (eta_comp P _ _ (le_Sn_le n (S n) (le_n (S n))) x n ı) J) as J'.
       simpl in J'.
-      rewrite (proof_irrel
-                 (le_Sn_le n (S n) (le_n (S n)))
-                 (NatCat_obligation_1 n n (S n) (le_Sn_le n (S n) (le_n (S n))) (le_n n))).
+      erewrite proof_irrel.
       apply J'.
   Qed.
 
@@ -587,10 +553,8 @@ Section Nat.
       rewrite <-(@fmap_comp _ _ A _ _ _ (le_S_n n n (le_n (S n)))
                   (le_S_n n (S n) (le_S (S n) (S n) (le_n (S n)))) ((η u) (S n) x)).
       simpl.
-      rewrite (proof_irrel
-                 (NatCat_obligation_1 n n (S n) (le_S_n n (S n) (le_S (S n) (S n) (le_n (S n))))
-                    (le_S_n n n (le_n (S n))))
-                 (le_Sn_le n (S n) (le_n (S n)))).
+      erewrite proof_irrel at 1.
+      erewrite proof_irrel at 1.
       apply He.
   Qed.
 
@@ -606,11 +570,36 @@ Section Nat.
       rewrite <-(@fmap_comp _ _ A _ _ _ (le_S_n n n (le_n (S n)))
                   (le_S_n n (S n) (le_S (S n) (S n) (le_n (S n)))) ((η u) (S n) x)) in H.
       simpl in H.
-      rewrite (proof_irrel
-                 (le_Sn_le n (S n) (le_n (S n)))
-                 (NatCat_obligation_1 n n (S n) (le_S_n n (S n) (le_S (S n) (S n) (le_n (S n))))
-                    (le_S_n n n (le_n (S n))))).
+      erewrite proof_irrel at 1.
+      erewrite proof_irrel at 1.
       apply H.
+  Qed.
+
+  Opaque later.
+
+  Lemma later_intro' {Γ} (P R : Γ [~>] Ω @ tree) :
+    R ⊢ P →
+    R ⊢ ▷ᵢ P.
+  Proof.
+    intros H.
+    eapply entails_trans.
+    - apply H.
+    - apply later_intro.
+  Qed.
+
+  Lemma later_mono' {Γ} : Proper ((@entails _ Γ) ==> (@entails _ Γ)) later.
+  Proof.
+    intros P R H.
+    apply later_mono.
+    apply H.
+  Qed.
+
+  Lemma later_loeb' {Γ} (P : Γ [~>] Ω @ tree) :
+    (▷ᵢ P ⊢ P) → (⊤ᵢ ⊢ P).
+  Proof.
+    intros H.
+    apply later_loeb.
+    apply H.
   Qed.
 
 End Nat.

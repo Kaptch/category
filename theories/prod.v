@@ -287,6 +287,14 @@ Section BinProd.
 
 End BinProd.
 
+Arguments bin_proj_arr₁ {_ _ _ _}.
+Arguments bin_proj_arr₂ {_ _ _ _}.
+
+Definition π₁ {C : Category} {X Y : C} {XY : BinProd X Y}
+  := @bin_proj_arr₁ C X Y XY.
+Definition π₂ {C : Category} {X Y : C} {XY : BinProd X Y}
+  := @bin_proj_arr₂ C X Y XY.
+
 Section TerminalLimit.
   Local Open Scope cat_scope.
   Local Open Scope functor_scope.

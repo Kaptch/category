@@ -409,13 +409,16 @@ End ordinal_match.
 Section ordinal_recursor.
   Context {SI: indexT}.
 
-  Definition index_rec (P: SI → Type): P zero → (∀ α, P α → P (succ α)) → (∀ α: limit_idx SI, (∀ β, β ≺ α → P β) → P α) → ∀ α, P α :=
+  Definition index_rec (P: SI → Type)
+    : P zero → (∀ α, P α → P (succ α)) →
+      (∀ α: limit_idx SI, (∀ β, β ≺ α → P β) → P α) → ∀ α, P α :=
     λ s f lim, Fix (index_lt_wf SI) _ (λ α IH,
         match index_is_zero α with
         | left EQ => eq_rect_r P s EQ
         | right NZ =>
           match index_dec_limit α with
-          | inl (exist _ β EQ) => eq_rect_r P (f β (IH β (index_succ_greater' α β EQ))) EQ
+          | inl (exist _ β EQ) =>
+              eq_rect_r P (f β (IH β (index_succ_greater' α β EQ))) EQ
           | inr Hlim => lim (mklimitidx α Hlim NZ) IH
           end
         end

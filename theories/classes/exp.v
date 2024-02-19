@@ -48,21 +48,21 @@ Section Aux.
     `{hasExp C}
     {X Y Z : C}
     : (X [~>] (Y ⇒ Z @ C)) [→] (X ×ₒ Y @ C [~>] Z)
-    := λₛ f, (eval Z Y (Y ⇒ Z @ C) ∘ ⟨ f ×ₐ ı ⟩).
+    := λₛ f, (eval ∘ ⟨ f ×ₐ ı ⟩).
   Next Obligation.
     intros; simpl.
     f_equiv.
     apply (snd (projT2 (bin_prod_ump (Y ⇒ Z @ C) Y ((Y ⇒ Z @ C) ×ₒ Y @ C) (X ×ₒ Y @ C)
-                          (a₁ ∘ bin_proj_arr₁ X Y (X ×ₒ Y @ C))
-                          (ı ∘ bin_proj_arr₂ X Y (X ×ₒ Y @ C))))).
+                          (a₁ ∘ π₁)
+                          (ı ∘ π₂)))).
     split.
     - rewrite H1.
       apply (proj1 (fst (projT2 (bin_prod_ump (Y ⇒ Z @ C) Y ((Y ⇒ Z @ C) ×ₒ Y @ C) (X ×ₒ Y @ C)
-                                   (a₂ ∘ bin_proj_arr₁ X Y (X ×ₒ Y @ C))
-                                   (ı ∘ bin_proj_arr₂ X Y (X ×ₒ Y @ C)))))).
+                                   (a₂ ∘ π₁)
+                                   (ı ∘ π₂))))).
     - rewrite <-(proj2 (fst (projT2 (bin_prod_ump (Y ⇒ Z @ C) Y ((Y ⇒ Z @ C) ×ₒ Y @ C) (X ×ₒ Y @ C)
-                                      (a₂ ∘ bin_proj_arr₁ X Y (X ×ₒ Y @ C))
-                                      (ı ∘ bin_proj_arr₂ X Y (X ×ₒ Y @ C)))))).
+                                      (a₂ ∘ π₁)
+                                      (ı ∘ π₂))))).
       now rewrite arrow_comp_id_l.
   Qed.
 
@@ -72,7 +72,7 @@ Section Aux.
     `{hasExp C}
     {X Y Z : C}
     (f : X ×ₒ Y @ C [~>] Z)
-    : Σ! (g : (X [~>] (Y ⇒ Z @ C))), f ≡ eval Z Y (Y ⇒ Z @ C) ∘ ⟨ g ×ₐ ı ⟩.
+    : Σ! (g : (X [~>] (Y ⇒ Z @ C))), f ≡ eval ∘ ⟨ g ×ₐ ı ⟩.
   Proof.
     exists (Curry f).
     split.
@@ -125,18 +125,18 @@ Section Aux.
     (X Y : C) (a b : Exp X Y)
     : Isomorphism a b :=
     {|
-      iso1 := (projT1 (@exp_ump _ _ X Y b a (@eval _ _ X Y a)));
-      iso2 := (projT1 (@exp_ump _ _ X Y a b (@eval _ _ X Y b)));
+      iso1 := (projT1 (@exp_ump _ _ X Y b a eval));
+      iso2 := (projT1 (@exp_ump _ _ X Y a b eval));
     |}.
   Next Obligation.
     intros ? ? X Y a b.
-    pose proof (fst (projT2 (@exp_ump _ _ X Y b a (@eval _ _ X Y a)))) as H'.
-    rewrite (fst (projT2 (@exp_ump _ _ X Y a b (@eval _ _ X Y b)))) in H'.
+    pose proof (fst (projT2 (@exp_ump _ _ X Y b a eval))) as H'.
+    rewrite (fst (projT2 (@exp_ump _ _ X Y a b eval))) in H'.
     rewrite arrow_comp_assoc in H'.
     rewrite ArrBinProdComp in H'.
     rewrite arrow_comp_id_l in H'.
-    rewrite <-(snd (projT2 (@exp_ump _ _ X Y a a (@eval _ _ X Y a))) _ H'); clear H'.
-    apply (snd (projT2 (@exp_ump _ _ X Y a a (eval X Y a))) ı).
+    rewrite <-(snd (projT2 (@exp_ump _ _ X Y a a eval)) _ H'); clear H'.
+    apply (snd (projT2 (@exp_ump _ _ X Y a a eval)) ı).
     simpl.
     rewrite (snd (projT2 (@bin_prod_ump C a Y (a ×ₒ Y @ C) _ _ _)));
       [symmetry; apply arrow_comp_id_r |].
@@ -144,13 +144,13 @@ Section Aux.
   Qed.
   Next Obligation.
     intros ? ? X Y a b.
-    pose proof (fst (projT2 (@exp_ump _ _ X Y a b (@eval _ _ X Y b)))) as H'.
-    rewrite (fst (projT2 (@exp_ump _ _ X Y b a (@eval _ _ X Y a)))) in H'.
+    pose proof (fst (projT2 (@exp_ump _ _ X Y a b eval))) as H'.
+    rewrite (fst (projT2 (@exp_ump _ _ X Y b a eval))) in H'.
     rewrite arrow_comp_assoc in H'.
     rewrite ArrBinProdComp in H'.
     rewrite arrow_comp_id_l in H'.
-    rewrite <-(snd (projT2 (@exp_ump _ _ X Y b b (@eval _ _ X Y b))) _ H'); clear H'.
-    apply (snd (projT2 (@exp_ump _ _ X Y b b (eval X Y b))) ı).
+    rewrite <-(snd (projT2 (@exp_ump _ _ X Y b b eval)) _ H'); clear H'.
+    apply (snd (projT2 (@exp_ump _ _ X Y b b eval)) ı).
     simpl.
     rewrite (snd (projT2 (@bin_prod_ump C b Y (b ×ₒ Y @ C) _ _ _)));
       [symmetry; apply arrow_comp_id_r |].

@@ -450,7 +450,7 @@ Section IntLogic.
   Qed.
 
   Lemma all_intro {Γ A : PSh C} (R : Γ [~>] Ω @ (PSh C)) (P : Γ ×ₒ A @ (PSh C) [~>] Ω @ (PSh C)) :
-    R ∘ bin_proj_arr₁ _ _ _ ⊢ P →
+    R ∘ π₁ ⊢ P →
     R ⊢ ∀ᵢ[A] P.
   Proof.
     intros H n x Rx j Hj y; simpl.
@@ -491,7 +491,7 @@ Section IntLogic.
   Qed.
 
   Lemma exist_elim {Γ A} (P : Γ ×ₒ A @ (PSh C) [~>] Ω @ (PSh C)) (Q : Γ [~>] Ω @ (PSh C)) :
-    P ⊢ Q ∘ bin_proj_arr₁ _ _ _ → ∃ᵢ[A] P ⊢ Q.
+    P ⊢ Q ∘ π₁ → ∃ᵢ[A] P ⊢ Q.
   Proof.
     intros H n x [y Py]; simpl in *.
     unfold compose in *; simpl in *.
@@ -509,6 +509,15 @@ Section IntLogic.
   Proof.
     intros H n x.
     apply q.
+  Qed.
+
+  Lemma pure_elim {Γ : PSh C} {P : Γ [~>] Ω @ (PSh C)}
+    (φ : Prop) : (φ → ⊤ᵢ ⊢ P) → (pure φ) ⊢ P.
+  Proof.
+    intros H n x G.
+    apply H.
+    - apply G.
+    - constructor.
   Qed.
 
   Opaque entails true false conj disj impl all exist pure.
@@ -866,39 +875,26 @@ Section IntLogic.
       reflexivity.
   Qed.
 
-  Inductive LogicSyntax : ∀ (Γ : PSh C), Type :=
-  | LS_pure Γ (p : Prop) : LogicSyntax Γ
-  | LS_false Γ : LogicSyntax Γ
-  | LS_true Γ : LogicSyntax Γ
-  | LS_eq Γ {A} (a b : Γ [~>] A) : LogicSyntax Γ
-  | LS_xist Γ {A} (a : LogicSyntax (Γ ×ₒ A @ PSh C)) : LogicSyntax Γ
-  | LS_all Γ {A} (a : LogicSyntax (Γ ×ₒ A @ PSh C)) : LogicSyntax Γ
-  | LS_conj Γ (a b : LogicSyntax Γ) : LogicSyntax Γ
-  | LS_disj Γ (a b : LogicSyntax Γ) : LogicSyntax Γ
-  | LS_impl Γ (a b : LogicSyntax Γ) : LogicSyntax Γ.
+  Program Definition DiscretePSh (D : Type)
+    : PSh C :=
+    {|
+      FO _ := [D];
+      fmap A B := λₛ f, ı;
+    |}.
+  Next Obligation.
+    intros; simpl.
+    reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    reflexivity.
+  Qed.
 
-  (* Program Definition LogicF : PSh (PSh C) := *)
-  (*   {| *)
-  (*     FO X := [ LogicSyntax X ]; *)
-  (*     fmap A B := λₛ f, λₛ x, _; *)
-  (*   |}. *)
-  (* Next Obligation. *)
-  (*   intros A B f x; simpl. *)
-
-
-  Fixpoint LogicInterp {Γ : PSh C} (t : LogicSyntax Γ) :
-    Γ [~>] (Ω @ PSh C) :=
-    match t in (LogicSyntax Γ') return (Γ' [~>] (Ω @ PSh C)) with
-    | LS_pure Γ' p => pure p
-    | LS_false Γ' => false
-    | LS_true Γ' => true
-    | LS_eq Γ' a b => eq a b
-    | LS_xist Γ' a => exist _ (LogicInterp a)
-    | LS_all Γ' a => all _ (LogicInterp a)
-    | LS_conj Γ' a b => conj (LogicInterp a) (LogicInterp b)
-    | LS_disj Γ' a b => disj (LogicInterp a) (LogicInterp b)
-    | LS_impl Γ' a b => impl (LogicInterp a) (LogicInterp b)
-    end.
+  Definition GlobalSections : Functor (PSh C) SetoidCat := hom.HomR (𝟙 @ (PSh C)).
 
 End IntLogic.
 

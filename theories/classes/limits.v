@@ -116,48 +116,48 @@ Section Aux.
     {X₁ Y₁ X₂ Y₂ : C}
     : (X₁ [~>] Y₁) [→] (X₂ [~>] Y₂) [→] (X₁ ×ₒ X₂ @ C [~>] Y₁ ×ₒ Y₂ @ C) :=
     λₛ f, λₛ g, (projT1 (bin_prod_ump Y₁ Y₂ (Y₁ ×ₒ Y₂ @ C) (X₁ ×ₒ X₂ @ C)
-                           (f ∘ bin_proj_arr₁ X₁ X₂ (X₁ ×ₒ X₂ @ C))
-                           (g ∘ bin_proj_arr₂ X₁ X₂ (X₁ ×ₒ X₂ @ C)))).
+                           (f ∘ π₁)
+                           (g ∘ π₂))).
   Next Obligation.
     intros; simpl.
     apply (snd (projT2 (bin_prod_ump Y₁ Y₂ (Y₁ ×ₒ Y₂ @ C) (X₁ ×ₒ X₂ @ C)
-                          (f ∘ bin_proj_arr₁ X₁ X₂ (X₁ ×ₒ X₂ @ C))
-                          (a₁ ∘ bin_proj_arr₂ X₁ X₂ (X₁ ×ₒ X₂ @ C))))).
+                          (f ∘ π₁)
+                          (a₁ ∘ π₂)))).
     split.
     - apply (proj1
                (fst
                   (projT2
                      (bin_prod_ump Y₁ Y₂ (Y₁ ×ₒ Y₂ @ C) (X₁ ×ₒ X₂ @ C)
-                        (f ∘ bin_proj_arr₁ X₁ X₂ (X₁ ×ₒ X₂ @ C))
-                        (a₂ ∘ bin_proj_arr₂ X₁ X₂ (X₁ ×ₒ X₂ @ C)))))).
+                        (f ∘ π₁)
+                        (a₂ ∘ π₂))))).
     - rewrite H.
       apply (proj2
                (fst
                   (projT2
                      (bin_prod_ump Y₁ Y₂ (Y₁ ×ₒ Y₂ @ C) (X₁ ×ₒ X₂ @ C)
-                        (f ∘ bin_proj_arr₁ X₁ X₂ (X₁ ×ₒ X₂ @ C))
-                        (a₂ ∘ bin_proj_arr₂ X₁ X₂ (X₁ ×ₒ X₂ @ C)))))).
+                        (f ∘ π₁)
+                        (a₂ ∘ π₂))))).
   Qed.
   Next Obligation.
     intros; simpl.
     intros a.
     apply (snd (projT2 (bin_prod_ump Y₁ Y₂ (Y₁ ×ₒ Y₂ @ C) (X₁ ×ₒ X₂ @ C)
-                          (a₁ ∘ bin_proj_arr₁ X₁ X₂ (X₁ ×ₒ X₂ @ C))
-                          (a ∘ bin_proj_arr₂ X₁ X₂ (X₁ ×ₒ X₂ @ C))))).
+                          (a₁ ∘ π₁)
+                          (a ∘ π₂)))).
     split.
     - rewrite H.
       apply (proj1
                (fst
                   (projT2
                      (bin_prod_ump Y₁ Y₂ (Y₁ ×ₒ Y₂ @ C) (X₁ ×ₒ X₂ @ C)
-                        (a₂ ∘ bin_proj_arr₁ X₁ X₂ (X₁ ×ₒ X₂ @ C))
-                        (a ∘ bin_proj_arr₂ X₁ X₂ (X₁ ×ₒ X₂ @ C)))))).
+                        (a₂ ∘ π₁)
+                        (a ∘ π₂))))).
     - apply (proj2
                (fst
                   (projT2
                      (bin_prod_ump Y₁ Y₂ (Y₁ ×ₒ Y₂ @ C) (X₁ ×ₒ X₂ @ C)
-                        (a₂ ∘ bin_proj_arr₁ X₁ X₂ (X₁ ×ₒ X₂ @ C))
-                        (a ∘ bin_proj_arr₂ X₁ X₂ (X₁ ×ₒ X₂ @ C)))))).
+                        (a₂ ∘ π₁)
+                        (a ∘ π₂))))).
   Qed.
 
   Lemma ArrBinProdComp {C : Category}
