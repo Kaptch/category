@@ -3,6 +3,7 @@
 -arg -w
 -arg -all
 
+theories/ordinals/stepindex.v
 theories/ordinals/arithmetic.v
 theories/ordinals/ord_stepindex.v
 theories/ordinals/set_functions.v
