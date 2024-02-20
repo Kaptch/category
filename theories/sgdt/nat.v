@@ -471,7 +471,7 @@ Section Nat.
   Notation "'▷ᵢ' P" := (later P) (at level 80) : logic_scope.
 
   Lemma later_intro {Γ} (P : Γ [~>] Ω @ tree) :
-    P ⊢ ▷ᵢ P.
+    P ⊢ᵢ ▷ᵢ P.
   Proof.
     intros [| n] x Px; simpl.
     - constructor.
@@ -482,8 +482,8 @@ Section Nat.
   Qed.
 
   Lemma later_mono {Γ} (P Q : Γ [~>] Ω @ tree) :
-    P ⊢ Q →
-    ▷ᵢ P ⊢ ▷ᵢ Q.
+    P ⊢ᵢ Q →
+    ▷ᵢ P ⊢ᵢ ▷ᵢ Q.
   Proof.
     intros H [| n] x Px; simpl in *.
     - done.
@@ -501,8 +501,8 @@ Section Nat.
   Qed.
 
   Lemma later_elim (P : 𝟙 @ tree [~>] Ω @ tree) :
-    ⊤ᵢ ⊢ ▷ᵢ P →
-    ⊤ᵢ ⊢ P.
+    ⊤ᵢ ⊢ᵢ ▷ᵢ P →
+    ⊤ᵢ ⊢ᵢ P.
   Proof.
     intros H n a _.
     pose proof (H (S n) Point I) as J.
@@ -524,8 +524,8 @@ Section Nat.
   Qed.
 
   Lemma later_loeb {Γ} (P : Γ [~>] Ω @ tree) :
-    ▷ᵢ P ⊢ P →
-    ⊤ᵢ ⊢ P.
+    ▷ᵢ P ⊢ᵢ P →
+    ⊤ᵢ ⊢ᵢ P.
   Proof.
     intros H n x _.
     induction n as [| n IHn]; simpl.
@@ -539,7 +539,7 @@ Section Nat.
   Qed.
 
   Lemma later_eq {Γ A} (t u : Γ [~>] A) :
-    ▷ᵢ (t ≡ᵢ u) ⊢ next ∘ t ≡ᵢ next ∘ u.
+    ▷ᵢ (t ≡ᵢ u) ⊢ᵢ next ∘ t ≡ᵢ next ∘ u.
   Proof.
     intros n x He; simpl in *.
     destruct n as [| n]; simpl.
@@ -559,7 +559,7 @@ Section Nat.
   Qed.
 
   Lemma later_eq_inv {Γ A} (t u : Γ [~>] A) :
-    next ∘ t ≡ᵢ next ∘ u ⊢ ▷ᵢ (t ≡ᵢ u).
+    next ∘ t ≡ᵢ next ∘ u ⊢ᵢ ▷ᵢ (t ≡ᵢ u).
   Proof.
     intros n x H.
     destruct n as [| n].
@@ -575,11 +575,51 @@ Section Nat.
       apply H.
   Qed.
 
+  Lemma later_false_em {Γ} (P : Γ [~>] Ω @ tree) : ▷ᵢ P ⊢ᵢ ▷ᵢ ⊥ᵢ ∨ᵢ (▷ᵢ ⊥ᵢ →ᵢ P).
+  Proof.
+    intros ???.
+    destruct n as [| n].
+    - now left.
+    - right.
+      intros q e G.
+      destruct q as [| q].
+      + simpl.
+        erewrite (proof_irrel (Nat.le_trans 0 (S n) (S n) e (le_n (S n)))).
+        apply (@sieve_closed _ _ ((η P) (S n) γ) _ 0 _ (le_0_n _) H).
+      + exfalso; apply G.
+  Qed.
+
+  Lemma later_intuit_forall {A} (Φ : A → (GlobalSections (Ω @ tree)))
+    : (∀ᵢ a, (▷ᵢ (Φ a))) ⊢ᵢ ▷ᵢ ∀ᵢ a, Φ a.
+  Proof.
+    intros n γ H.
+    destruct n as [| n].
+    - constructor.
+    - intros q e r.
+      simpl.
+      erewrite (proof_irrel (Nat.le_trans q n (S n) e (le_Sn_le n (S n) (le_n (S n))))).
+      apply (H (S q) (le_n_S _ _ e) r).
+  Qed.
+
+  Lemma later_intuit_exist_false {A} (Φ : A → (GlobalSections (Ω @ tree))) :
+    (▷ᵢ ∃ᵢ a, Φ a) ⊢ᵢ ▷ᵢ ⊥ᵢ ∨ᵢ (∃ᵢ a, ▷ᵢ (Φ a)).
+  Proof.
+    intros n γ H.
+    destruct n as [| n].
+    - now left.
+    - right.
+      destruct H as [r H].
+      exists r.
+      simpl.
+      erewrite (proof_irrel (le_Sn_le n (S n) (le_n (S n)))).
+      apply H.
+  Qed.
+
   Opaque later.
 
   Lemma later_intro' {Γ} (P R : Γ [~>] Ω @ tree) :
-    R ⊢ P →
-    R ⊢ ▷ᵢ P.
+    R ⊢ᵢ P →
+    R ⊢ᵢ ▷ᵢ P.
   Proof.
     intros H.
     eapply entails_trans.
@@ -595,11 +635,21 @@ Section Nat.
   Qed.
 
   Lemma later_loeb' {Γ} (P : Γ [~>] Ω @ tree) :
-    (▷ᵢ P ⊢ P) → (⊤ᵢ ⊢ P).
+    (▷ᵢ P ⊢ᵢ P) → (⊤ᵢ ⊢ᵢ P).
   Proof.
     intros H.
     apply later_loeb.
     apply H.
+  Qed.
+
+  Lemma later_false_em' {Γ} (R P : Γ [~>] Ω @ tree)
+    : R ⊢ᵢ ▷ᵢ P →
+      R ⊢ᵢ ▷ᵢ ⊥ᵢ ∨ᵢ (▷ᵢ ⊥ᵢ →ᵢ P).
+  Proof.
+    intros H.
+    eapply entails_trans.
+    - apply H.
+    - apply later_false_em.
   Qed.
 
 End Nat.

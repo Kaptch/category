@@ -26,6 +26,27 @@ Section IntLogic.
 
   Context {C : Category}.
 
+  Program Definition DiscretePSh (D : Type)
+    : PSh C :=
+    {|
+      FO _ := [D];
+      fmap A B := λₛ f, ı;
+    |}.
+  Next Obligation.
+    intros; simpl.
+    reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    reflexivity.
+  Qed.
+
+  Definition GlobalSections : Functor (PSh C) SetoidCat := hom.HomR (𝟙 @ (PSh C)).
+
   Program Definition trueI : 𝟙 @ (PSh C) [~>] Ω @ (PSh C)
     := PSh_true_arr.
 
@@ -246,6 +267,85 @@ Section IntLogic.
     reflexivity.
   Qed.
 
+  Program Definition intuit_all : ∀ A, (A → (GlobalSections (Ω @ PSh C))) → (GlobalSections (Ω @ PSh C))
+  := λ A f, λₙ x, λₛ γ, λᵢ d, λₛ g, ∀ q (e : q [~>] d) (r : A), f r x γ q (g ∘ e).
+  Next Obligation.
+    intros; simpl.
+    split; intros.
+    - now rewrite <-H.
+    - now rewrite H.
+  Qed.
+  Next Obligation.
+    intros.
+    intros q e' r'.
+    rewrite arrow_comp_assoc.
+    apply (H q (g ∘ e') r').
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros; split; intros.
+    - apply (setoid_arr_eq _ _ ((η f r) x) a₁ a₂ H q (f0 ∘ e)).
+      apply H0.
+    - apply (setoid_arr_eq _ _ ((η f r) x) a₁ a₂ H q (f0 ∘ e)).
+      apply H0.
+  Qed.
+  Next Obligation.
+    intros.
+    intros ???.
+    split; intros.
+    - intros ???.
+      specialize (H q e r).
+      setoid_rewrite (eta_comp (f r) _ _ f0 a q (f1 ∘ e)) in H.
+      simpl in H.
+      simpl.
+      rewrite arrow_comp_assoc.
+      apply H.
+    - intros ???.
+      specialize (H q e r).
+      rewrite (eta_comp (f r) _ _ f0 a q (f1 ∘ e)).
+      simpl in H.
+      simpl.
+      rewrite <-arrow_comp_assoc.
+      apply H.
+  Qed.
+
+  Program Definition intuit_exist : ∀ A, (A → (GlobalSections (Ω @ PSh C))) → (GlobalSections (Ω @ PSh C))
+  := λ A f, λₙ x, λₛ γ, λᵢ p, λₛ t, ∃ (r : A), f r x γ p t.
+  Next Obligation.
+    intros; simpl.
+    split; intros [r G]; exists r.
+    - now rewrite <-H.
+    - now rewrite H.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    simpl in H.
+    destruct H as [r H].
+    exists r.
+    apply (@sieve_closed _ _ ((η f r) x γ) _ _ _ g H).
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros; split; intros [r G]; exists r.
+    - apply (setoid_arr_eq _ _ ((η f r) x) a₁ a₂ H).
+      apply G.
+    - apply (setoid_arr_eq _ _ ((η f r) x) a₁ a₂ H).
+      apply G.
+  Qed.
+  Next Obligation.
+    intros.
+    intros ???.
+    split; intros.
+    - destruct H as [r H].
+      exists r.
+      rewrite (eta_comp (f r) _ _ f0 a d f1) in H.
+      apply H.
+    - destruct H as [r H].
+      exists r.
+      rewrite (eta_comp (f r) _ _ f0 a d f1).
+      apply H.
+  Qed.
+
   Program Definition true {Γ : PSh C} : Γ [~>] Ω @ (PSh C)
     := trueI ∘ (! @ (PSh C)).
   Definition false {Γ : PSh C} : Γ [~>] Ω @ (PSh C)
@@ -275,39 +375,43 @@ Section IntLogic.
                             (at level 95, P at level 95, format "∀ᵢ[ A ]  P") : logic_scope.
   Notation "∃ᵢ[ A ] P" := (exist A P)
                             (at level 95, P at level 95, format "∃ᵢ[ A ]  P") : logic_scope.
-  Notation "'⌜' P '⌝'" := (pure P) : logic_scope.
+  Notation "∀ᵢ x , P" :=
+    (intuit_all _ (λ x, P)) (at level 95) : logic_scope.
+  Notation "∃ᵢ x , P" :=
+    (intuit_exist _ (λ x, P)) (at level 95) : logic_scope.
+  Notation "'⌜' P '⌝ᵢ'" := (pure P) : logic_scope.
 
   Definition entails {Γ : PSh C} (P Q : Γ [~>] Ω @ (PSh C)) : Prop :=
     ∀ n γ, P n γ n ı → Q n γ n ı.
 
-  Infix "⊢" := entails (at level 99, no associativity) : logic_scope.
+  Infix "⊢ᵢ" := entails (at level 99, no associativity) : logic_scope.
 
   Local Open Scope logic_scope.
 
   Lemma entails_refl {Γ : PSh C} (P : Γ [~>] Ω @ (PSh C)) :
-    P ⊢ P.
+    P ⊢ᵢ P.
   Proof.
     now intros n x Px.
   Qed.
 
   Lemma entails_trans {Γ : PSh C} (P Q R : Γ [~>] Ω @ (PSh C)) :
-    P ⊢ Q →
-    Q ⊢ R →
-    P ⊢ R.
+    P ⊢ᵢ Q →
+    Q ⊢ᵢ R →
+    P ⊢ᵢ R.
   Proof.
     intros H1 H2 n x Px.
     apply H2, H1, Px.
   Qed.
 
   Lemma entails_subst {Γ A : PSh C} (t : Γ [~>] A) (P Q : A [~>] Ω @ (PSh C)) :
-    P ⊢ Q →
-    P ∘ t ⊢ Q ∘ t.
+    P ⊢ᵢ Q →
+    P ∘ t ⊢ᵢ Q ∘ t.
   Proof.
     now intros H n x Ptx; apply H.
   Qed.
 
   Lemma eq_refl {Γ A : PSh C} (t : Γ [~>] A) :
-    ⊤ᵢ ⊢ t ≡ᵢ t.
+    ⊤ᵢ ⊢ᵢ t ≡ᵢ t.
   Proof.
     intros ???.
     simpl.
@@ -315,7 +419,7 @@ Section IntLogic.
   Qed.
 
   Lemma eq_sym {Γ A : PSh C} (t u : Γ [~>] A) :
-    t ≡ᵢ u ⊢ u ≡ᵢ t.
+    t ≡ᵢ u ⊢ᵢ u ≡ᵢ t.
   Proof.
     intros n x H; simpl.
     rewrite H.
@@ -323,14 +427,14 @@ Section IntLogic.
   Qed.
 
   Lemma eq_trans {Γ A : PSh C} (t u v : Γ [~>] A) :
-    t ≡ᵢ u ∧ᵢ u ≡ᵢ v ⊢ t ≡ᵢ v.
+    t ≡ᵢ u ∧ᵢ u ≡ᵢ v ⊢ᵢ t ≡ᵢ v.
   Proof.
     intros n x [H1 H2]; simpl in *.
     now rewrite H1, H2.
   Qed.
 
   Lemma eq_subst {Γ A B : PSh C} (t u : Γ [~>] A) (D : A [~>] B) :
-    t ≡ᵢ u ⊢ D ∘ t ≡ᵢ D ∘ u.
+    t ≡ᵢ u ⊢ᵢ D ∘ t ≡ᵢ D ∘ u.
   Proof.
     intros n x He; simpl in *.
     unfold compose; simpl.
@@ -343,7 +447,7 @@ Section IntLogic.
   Qed.
 
   Lemma eq_coerce {Γ : PSh C} (P Q : Γ [~>] Ω @ (PSh C)) :
-    P ≡ᵢ Q ∧ᵢ P ⊢ Q.
+    P ≡ᵢ Q ∧ᵢ P ⊢ᵢ Q.
   Proof.
     intros n x [He HP]; simpl in *.
     specialize (He n ı).
@@ -352,28 +456,28 @@ Section IntLogic.
   Qed.
 
   Lemma true_intro {Γ : PSh C} {P : Γ [~>] Ω @ (PSh C)} :
-    P ⊢ ⊤ᵢ.
+    P ⊢ᵢ ⊤ᵢ.
   Proof.
     now intros.
   Qed.
 
   Lemma false_elim {Γ : PSh C} {P : Γ [~>] Ω @ (PSh C)} :
-    ⊥ᵢ ⊢ P.
+    ⊥ᵢ ⊢ᵢ P.
   Proof.
     now intros.
   Qed.
 
   Lemma conj_intro {Γ : PSh C} {R P Q : Γ [~>] Ω @ (PSh C)} :
-    R ⊢ P →
-    R ⊢ Q →
-    R ⊢ P ∧ᵢ Q.
+    R ⊢ᵢ P →
+    R ⊢ᵢ Q →
+    R ⊢ᵢ P ∧ᵢ Q.
   Proof.
     intros HP HQ n x Rx; simpl.
     split; [apply HP | apply HQ]; assumption.
   Qed.
 
   Lemma conj_elim_l {Γ : PSh C} {P Q : Γ [~>] Ω @ (PSh C)} :
-    P ∧ᵢ Q ⊢ P.
+    P ∧ᵢ Q ⊢ᵢ P.
   Proof.
     intros n x [Px Qx].
     simpl in *.
@@ -381,7 +485,7 @@ Section IntLogic.
   Qed.
 
   Lemma conj_elim_r {Γ : PSh C} {P Q : Γ [~>] Ω @ (PSh C)} :
-    P ∧ᵢ Q ⊢ Q.
+    P ∧ᵢ Q ⊢ᵢ Q.
   Proof.
     intros n x [Px Qx].
     simpl in *.
@@ -389,30 +493,30 @@ Section IntLogic.
   Qed.
 
   Lemma disj_intro_l {Γ : PSh C} {P Q : Γ [~>] Ω @ (PSh C)} :
-    P ⊢ P ∨ᵢ Q.
+    P ⊢ᵢ P ∨ᵢ Q.
   Proof.
     intros n x Px; left; simpl in *.
     assumption.
   Qed.
 
   Lemma disj_intro_r {Γ : PSh C} {P Q : Γ [~>] Ω @ (PSh C)} :
-    Q ⊢ P ∨ᵢ Q.
+    Q ⊢ᵢ P ∨ᵢ Q.
   Proof.
     intros n x Px; right; simpl in *.
     assumption.
   Qed.
 
   Lemma disj_elim {Γ : PSh C} {P Q R : Γ [~>] Ω @ (PSh C)} :
-    P ⊢ R →
-    Q ⊢ R →
-    P ∨ᵢ Q ⊢ R.
+    P ⊢ᵢ R →
+    Q ⊢ᵢ R →
+    P ∨ᵢ Q ⊢ᵢ R.
   Proof.
     intros HP HQ n x [Px | Qx]; [apply HP | apply HQ]; assumption.
   Qed.
 
   Lemma impl_intro {Γ : PSh C} {P Q R : Γ [~>] Ω @ (PSh C)} :
-    R ∧ᵢ P ⊢ Q →
-    R ⊢ P →ᵢ Q.
+    R ∧ᵢ P ⊢ᵢ Q →
+    R ⊢ᵢ P →ᵢ Q.
   Proof.
     intros H n x Rx j Hj Px; simpl in *.
     specialize (H j (fmap Γ Hj x)).
@@ -438,7 +542,7 @@ Section IntLogic.
   Qed.
 
   Lemma impl_elim {Γ : PSh C} {P Q : Γ [~>] Ω @ (PSh C)} :
-    (P →ᵢ Q) ∧ᵢ P ⊢ Q.
+    (P →ᵢ Q) ∧ᵢ P ⊢ᵢ Q.
   Proof.
     intros n x [H Px]; simpl in *.
     specialize (H n ı).
@@ -450,8 +554,8 @@ Section IntLogic.
   Qed.
 
   Lemma all_intro {Γ A : PSh C} (R : Γ [~>] Ω @ (PSh C)) (P : Γ ×ₒ A @ (PSh C) [~>] Ω @ (PSh C)) :
-    R ∘ π₁ ⊢ P →
-    R ⊢ ∀ᵢ[A] P.
+    R ∘ π₁ ⊢ᵢ P →
+    R ⊢ᵢ ∀ᵢ[A] P.
   Proof.
     intros H n x Rx j Hj y; simpl.
     apply H; simpl.
@@ -465,7 +569,7 @@ Section IntLogic.
   Qed.
 
   Lemma all_elim {Γ A : PSh C} (P : Γ ×ₒ A @ (PSh C) [~>] Ω @ (PSh C)) (t : Γ [~>] A) :
-    ∀ᵢ[A] P ⊢ P ∘ ⟨ ı , t ⟩.
+    ∀ᵢ[A] P ⊢ᵢ P ∘ ⟨ ı , t ⟩.
   Proof.
     intros n x H; simpl in *.
     unfold compose; simpl.
@@ -479,7 +583,7 @@ Section IntLogic.
   Qed.
 
   Lemma exist_intro {Γ A : PSh C} (P : Γ ×ₒ A @ (PSh C) [~>] Ω @ (PSh C)) (t : Γ [~>] A) :
-    P ∘ (⟨ ı , t ⟩) ⊢ ∃ᵢ[A] P.
+    P ∘ (⟨ ı , t ⟩) ⊢ᵢ ∃ᵢ[A] P.
   Proof.
     intros n x Px; simpl in *.
     exists (t n x).
@@ -491,7 +595,7 @@ Section IntLogic.
   Qed.
 
   Lemma exist_elim {Γ A} (P : Γ ×ₒ A @ (PSh C) [~>] Ω @ (PSh C)) (Q : Γ [~>] Ω @ (PSh C)) :
-    P ⊢ Q ∘ π₁ → ∃ᵢ[A] P ⊢ Q.
+    P ⊢ᵢ Q ∘ π₁ → ∃ᵢ[A] P ⊢ᵢ Q.
   Proof.
     intros H n x [y Py]; simpl in *.
     unfold compose in *; simpl in *.
@@ -505,14 +609,14 @@ Section IntLogic.
   Qed.
 
   Lemma pure_intro {Γ : PSh C} {P : Γ [~>] Ω @ (PSh C)} {Q : Prop} (q : Q) :
-    P ⊢ ⌜ Q ⌝.
+    P ⊢ᵢ ⌜ Q ⌝ᵢ.
   Proof.
     intros H n x.
     apply q.
   Qed.
 
   Lemma pure_elim {Γ : PSh C} {P : Γ [~>] Ω @ (PSh C)}
-    (φ : Prop) : (φ → ⊤ᵢ ⊢ P) → (pure φ) ⊢ P.
+    (φ : Prop) : (φ → ⊤ᵢ ⊢ᵢ P) → (⌜ φ ⌝ᵢ) ⊢ᵢ P.
   Proof.
     intros H n x G.
     apply H.
@@ -520,11 +624,44 @@ Section IntLogic.
     - constructor.
   Qed.
 
-  Opaque entails true false conj disj impl all exist pure.
+  Lemma intuit_all_intro {A} P (Ψ : A → (GlobalSections (Ω @ PSh C)))
+    : (∀ a, P ⊢ᵢ Ψ a) → P ⊢ᵢ ∀ᵢ a, Ψ a.
+  Proof.
+    intros H.
+    intros ??????.
+    apply sieve_closed.
+    now apply H.
+  Qed.
+
+  Lemma intuit_all_elim {A} {Ψ : A → (GlobalSections (Ω @ PSh C))} a
+    : (∀ᵢ a, Ψ a) ⊢ᵢ Ψ a.
+  Proof.
+    intros n γ H.
+    specialize (H n ı a).
+    rewrite arrow_comp_id_l in H.
+    apply H.
+  Qed.
+
+  Lemma intuit_exist_intro {A} {Ψ : A → (GlobalSections (Ω @ PSh C))} a
+    : Ψ a ⊢ᵢ ∃ᵢ a, Ψ a.
+  Proof.
+    intros n γ H.
+    exists a.
+    apply H.
+  Qed.
+
+  Lemma intuit_exist_elim {A} (Φ : A → (GlobalSections (Ω @ PSh C))) Q
+    : (∀ a, Φ a ⊢ᵢ Q) → (∃ᵢ a, Φ a) ⊢ᵢ Q.
+  Proof.
+    intros H n γ [r G].
+    apply (H r n γ G).
+  Qed.
+
+  Opaque entails true false conj disj impl all exist pure intuit_all intuit_exist.
 
   Lemma false_elim' {Γ : PSh C} (R P : Γ [~>] Ω @ (PSh C)) :
-    R ⊢ ⊥ᵢ →
-    R ⊢ P.
+    R ⊢ᵢ ⊥ᵢ →
+    R ⊢ᵢ P.
   Proof.
     intros H.
     eapply entails_trans; [apply H |].
@@ -532,19 +669,19 @@ Section IntLogic.
   Qed.
 
   Lemma conj_true_l_inv {Γ : PSh C} (P : Γ [~>] Ω @ (PSh C)) :
-    P ⊢ ⊤ᵢ ∧ᵢ P.
+    P ⊢ᵢ ⊤ᵢ ∧ᵢ P.
   Proof.
     apply conj_intro; [apply true_intro | apply entails_refl].
   Qed.
 
   Lemma conj_true_r_inv {Γ : PSh C} (P : Γ [~>] Ω @ (PSh C)) :
-    P ⊢ P ∧ᵢ ⊤ᵢ.
+    P ⊢ᵢ P ∧ᵢ ⊤ᵢ.
   Proof.
     apply conj_intro; [apply entails_refl | apply true_intro].
   Qed.
 
   Lemma conj_comm {Γ : PSh C} (P Q : Γ [~>] Ω @ (PSh C)) :
-    P ∧ᵢ Q ⊢ Q ∧ᵢ P.
+    P ∧ᵢ Q ⊢ᵢ Q ∧ᵢ P.
   Proof.
     apply conj_intro.
     - apply conj_elim_r.
@@ -552,9 +689,9 @@ Section IntLogic.
   Qed.
 
   Lemma conj_mono {Γ : PSh C} (P P' Q Q' : Γ [~>] Ω @ (PSh C)) :
-    P ⊢ P' →
-    Q ⊢ Q' →
-    P ∧ᵢ Q ⊢ P' ∧ᵢ Q'.
+    P ⊢ᵢ P' →
+    Q ⊢ᵢ Q' →
+    P ∧ᵢ Q ⊢ᵢ P' ∧ᵢ Q'.
   Proof.
     intros H1 H2.
     apply conj_intro.
@@ -565,8 +702,8 @@ Section IntLogic.
   Qed.
 
   Lemma conj_mono_l {Γ : PSh C} (P P' Q : Γ [~>] Ω @ (PSh C)) :
-    P ⊢ P' →
-    P ∧ᵢ Q ⊢ P' ∧ᵢ Q.
+    P ⊢ᵢ P' →
+    P ∧ᵢ Q ⊢ᵢ P' ∧ᵢ Q.
   Proof.
     intros H.
     eapply conj_mono.
@@ -575,8 +712,8 @@ Section IntLogic.
   Qed.
 
   Lemma conj_mono_r {Γ : PSh C} (P Q Q' : Γ [~>] Ω @ (PSh C)) :
-    Q ⊢ Q' →
-    P ∧ᵢ Q ⊢ P ∧ᵢ Q'.
+    Q ⊢ᵢ Q' →
+    P ∧ᵢ Q ⊢ᵢ P ∧ᵢ Q'.
   Proof.
     intros H.
     eapply conj_mono.
@@ -585,8 +722,8 @@ Section IntLogic.
   Qed.
 
   Lemma conj_elim_l' {Γ : PSh C} (P Q R : Γ [~>] Ω @ (PSh C)) :
-    R ⊢ P ∧ᵢ Q →
-    R ⊢ P.
+    R ⊢ᵢ P ∧ᵢ Q →
+    R ⊢ᵢ P.
   Proof.
     intros H.
     eapply entails_trans.
@@ -595,8 +732,8 @@ Section IntLogic.
   Qed.
 
   Lemma conj_elim_r' {Γ : PSh C} (P Q R : Γ [~>] Ω @ (PSh C)) :
-    R ⊢ P ∧ᵢ Q →
-    R ⊢ P.
+    R ⊢ᵢ P ∧ᵢ Q →
+    R ⊢ᵢ P.
   Proof.
     intros H.
     eapply entails_trans.
@@ -605,7 +742,7 @@ Section IntLogic.
   Qed.
 
   Lemma disj_false_l {Γ : PSh C} (P : Γ [~>] Ω @ (PSh C)) :
-    ⊥ᵢ ∨ᵢ P ⊢ P.
+    ⊥ᵢ ∨ᵢ P ⊢ᵢ P.
   Proof.
     eapply disj_elim.
     - apply false_elim.
@@ -613,7 +750,7 @@ Section IntLogic.
   Qed.
 
   Lemma disj_false_r {Γ : PSh C} (P : Γ [~>] Ω @ (PSh C)) :
-    P ∨ᵢ ⊥ᵢ ⊢ P.
+    P ∨ᵢ ⊥ᵢ ⊢ᵢ P.
   Proof.
     eapply disj_elim.
     - apply entails_refl.
@@ -621,7 +758,7 @@ Section IntLogic.
   Qed.
 
   Lemma disj_comm {Γ : PSh C} (P Q : Γ [~>] Ω @ (PSh C)) :
-    P ∨ᵢ Q ⊢ Q ∨ᵢ P.
+    P ∨ᵢ Q ⊢ᵢ Q ∨ᵢ P.
   Proof.
     eapply disj_elim.
     - apply disj_intro_r.
@@ -629,9 +766,9 @@ Section IntLogic.
   Qed.
 
   Lemma disj_mono {Γ : PSh C} (P P' Q Q' : Γ [~>] Ω @ (PSh C)) :
-    P ⊢ P' →
-    Q ⊢ Q' →
-    P ∨ᵢ Q ⊢ P' ∨ᵢ Q'.
+    P ⊢ᵢ P' →
+    Q ⊢ᵢ Q' →
+    P ∨ᵢ Q ⊢ᵢ P' ∨ᵢ Q'.
   Proof.
     intros H1 H2.
     apply disj_elim.
@@ -644,8 +781,8 @@ Section IntLogic.
   Qed.
 
   Lemma disj_mono_l {Γ : PSh C} (P P' Q : Γ [~>] Ω @ (PSh C)) :
-    P ⊢ P' →
-    P ∨ᵢ Q ⊢ P' ∨ᵢ Q.
+    P ⊢ᵢ P' →
+    P ∨ᵢ Q ⊢ᵢ P' ∨ᵢ Q.
   Proof.
     intros H.
     apply disj_mono.
@@ -654,8 +791,8 @@ Section IntLogic.
   Qed.
 
   Lemma disj_mono_r {Γ : PSh C} (P Q Q' : Γ [~>] Ω @ (PSh C)) :
-    Q ⊢ Q' →
-    P ∨ᵢ Q ⊢ P ∨ᵢ Q'.
+    Q ⊢ᵢ Q' →
+    P ∨ᵢ Q ⊢ᵢ P ∨ᵢ Q'.
   Proof.
     intros H.
     apply disj_mono.
@@ -664,8 +801,8 @@ Section IntLogic.
   Qed.
 
   Lemma disj_intro_l' {Γ : PSh C} (P Q R : Γ [~>] Ω @ (PSh C)) :
-    R ⊢ P →
-    R ⊢ P ∨ᵢ Q.
+    R ⊢ᵢ P →
+    R ⊢ᵢ P ∨ᵢ Q.
   Proof.
     intros H.
     eapply entails_trans.
@@ -674,8 +811,8 @@ Section IntLogic.
   Qed.
 
   Lemma disj_intro_r' {Γ : PSh C} (P Q R : Γ [~>] Ω @ (PSh C)) :
-    R ⊢ Q →
-    R ⊢ P ∨ᵢ Q.
+    R ⊢ᵢ Q →
+    R ⊢ᵢ P ∨ᵢ Q.
   Proof.
     intros H.
     eapply entails_trans.
@@ -684,8 +821,8 @@ Section IntLogic.
   Qed.
 
   Lemma impl_elim' {Γ : PSh C} (P Q R : Γ [~>] Ω @ (PSh C)) :
-    R ⊢ P →ᵢ Q →
-    R ∧ᵢ P ⊢ Q.
+    R ⊢ᵢ P →ᵢ Q →
+    R ∧ᵢ P ⊢ᵢ Q.
   Proof.
     intros H.
     eapply entails_trans.
@@ -694,8 +831,8 @@ Section IntLogic.
   Qed.
 
   Lemma entails_impl {Γ : PSh C} (P Q : Γ [~>] Ω @ (PSh C)) :
-    P ⊢ Q →
-    ⊤ᵢ ⊢ P →ᵢ Q.
+    P ⊢ᵢ Q →
+    ⊤ᵢ ⊢ᵢ P →ᵢ Q.
   Proof.
     intros H.
     apply impl_intro.
@@ -705,8 +842,8 @@ Section IntLogic.
   Qed.
 
   Lemma impl_entails {Γ : PSh C} (P Q : Γ [~>] Ω @ (PSh C)) :
-    ⊤ᵢ ⊢ P →ᵢ Q →
-    P ⊢ Q.
+    ⊤ᵢ ⊢ᵢ P →ᵢ Q →
+    P ⊢ᵢ Q.
   Proof.
     intros H.
     apply entails_trans with (⊤ᵢ ∧ᵢ P).
@@ -715,8 +852,8 @@ Section IntLogic.
   Qed.
 
   Lemma all_elim' {Γ A} (P : Γ ×ₒ A @ (PSh C) [~>] Ω @ (PSh C)) (t : Γ [~>] A) (R : Γ [~>] Ω @ (PSh C)) :
-    R ⊢ ∀ᵢ[A] P →
-    R ⊢ P ∘ ⟨ ı , t ⟩.
+    R ⊢ᵢ ∀ᵢ[A] P →
+    R ⊢ᵢ P ∘ ⟨ ı , t ⟩.
   Proof.
     intros H.
     eapply entails_trans.
@@ -725,8 +862,8 @@ Section IntLogic.
   Qed.
 
   Lemma exist_intro' {Γ A} (P : Γ ×ₒ A @ (PSh C) [~>] Ω @ (PSh C)) (t : Γ [~>] A) (R : Γ [~>] Ω @ (PSh C)) :
-    R ⊢ P ∘ (⟨ ı , t ⟩) →
-    R ⊢ ∃ᵢ[A] P.
+    R ⊢ᵢ P ∘ (⟨ ı , t ⟩) →
+    R ⊢ᵢ ∃ᵢ[A] P.
   Proof.
     intros H.
     eapply entails_trans.
@@ -735,7 +872,7 @@ Section IntLogic.
   Qed.
 
   Lemma soundness {P : Prop} (n : C) :
-    ⊤ᵢ ⊢ @pure (𝟙 @ (PSh C)) P → P.
+    ⊤ᵢ ⊢ᵢ @pure (𝟙 @ (PSh C)) P → P.
   Proof.
     intros H.
     apply (H n Point).
@@ -743,7 +880,7 @@ Section IntLogic.
   Qed.
 
   Lemma soundness_eq {A B : PSh C} (t u : 𝟙 @ (PSh C) [~>] A) :
-    ⊤ᵢ ⊢ t ≡ᵢ u → t ≡ u.
+    ⊤ᵢ ⊢ᵢ t ≡ᵢ u → t ≡ u.
   Proof.
     intros H.
     intros x.
@@ -875,27 +1012,6 @@ Section IntLogic.
       reflexivity.
   Qed.
 
-  Program Definition DiscretePSh (D : Type)
-    : PSh C :=
-    {|
-      FO _ := [D];
-      fmap A B := λₛ f, ı;
-    |}.
-  Next Obligation.
-    intros; simpl.
-    reflexivity.
-  Qed.
-  Next Obligation.
-    intros; simpl.
-    reflexivity.
-  Qed.
-  Next Obligation.
-    intros; simpl.
-    reflexivity.
-  Qed.
-
-  Definition GlobalSections : Functor (PSh C) SetoidCat := hom.HomR (𝟙 @ (PSh C)).
-
 End IntLogic.
 
 Notation "'⊤ᵢ'" := true : logic_scope.
@@ -908,6 +1024,10 @@ Notation "∀ᵢ[ A ] P" := (all A P)
                           (at level 95, P at level 95, format "∀ᵢ[ A ]  P") : logic_scope.
 Notation "∃ᵢ[ A ] P" := (exist A P)
                           (at level 95, P at level 95, format "∃ᵢ[ A ]  P") : logic_scope.
-Notation "'⌜' P '⌝'" := (pure P) : logic_scope.
+Notation "∀ᵢ x , P" :=
+  (intuit_all _ (λ x, P)) (at level 95) : logic_scope.
+Notation "∃ᵢ x , P" :=
+  (intuit_exist _ (λ x, P)) (at level 95) : logic_scope.
+Notation "'⌜' P '⌝ᵢ'" := (pure P) : logic_scope.
 
-Infix "⊢" := entails (at level 99, no associativity) : logic_scope.
+Infix "⊢ᵢ" := entails (at level 99, no associativity) : logic_scope.
