@@ -473,9 +473,10 @@ Section Nat.
   Lemma later_intro {Γ} (P : Γ [~>] Ω @ tree) :
     P ⊢ᵢ ▷ᵢ P.
   Proof.
-    intros [| n] x Px; simpl.
+    intros n γ [| m] f Px.
     - constructor.
-    - pose proof (@sieve_closed _ _ ((η P) (S n) x) (S n) n ı (le_Sn_le n (S n) (le_n (S n))) Px) as J.
+    - simpl.
+      pose proof (@sieve_closed _ _ ((η P) n γ) (S m) m f (le_Sn_le m (S m) (le_n (S m))) Px) as J.
       simpl in J.
       erewrite proof_irrel.
       apply J.
@@ -485,18 +486,9 @@ Section Nat.
     P ⊢ᵢ Q →
     ▷ᵢ P ⊢ᵢ ▷ᵢ Q.
   Proof.
-    intros H [| n] x Px; simpl in *.
-    - done.
-    - specialize (H n (functor.fmap Γ (le_Sn_le n (S n) (le_n (S n))) x)).
-      simpl in H.
-      rewrite (proof_irrel (le_Sn_le n (S n) (le_n (S n)))
-                 (Nat.le_trans n n (S n) (le_n n) (le_Sn_le n (S n) (le_n (S n))))).
-      apply (proj1 (eta_comp Q _ _ (le_Sn_le n (S n) (le_n (S n))) x n ı)).
-      simpl.
-      apply H.
-      apply (proj2 (eta_comp P _ _ (le_Sn_le n (S n) (le_n (S n))) x n ı)).
-      simpl.
-      erewrite proof_irrel.
+    intros H n γ [| m] f Px; simpl in *.
+    - constructor.
+    - apply H.
       apply Px.
   Qed.
 
@@ -504,114 +496,132 @@ Section Nat.
     ⊤ᵢ ⊢ᵢ ▷ᵢ P →
     ⊤ᵢ ⊢ᵢ P.
   Proof.
-    intros H n a _.
-    pose proof (H (S n) Point I) as J.
-    simpl in J.
-    epose proof (eta_comp P _ _ (le_Sn_le n (S n) (le_n (S n))) Point n ı) as K.
+    intros H n γ m f _.
+    specialize (H (S n) Point (S m) (le_n_S _ _ f) I).
+    simpl in H.
+    epose proof (eta_comp P _ _ (le_Sn_le n (S n) (le_n (S n))) Point m f) as K.
     simpl in K.
     match goal with
     | H : context G [@Build_NatTrans ?T ?d ?e ?q ?r ?f] |- _ =>
         set (s := @Build_NatTrans T d e q r f)
     end.
-    assert ((η P) n (s : NatTransSetoid _ _ _ _) n (le_n n) ≡ (η P) n a n ı) as KKK.
+    assert ((η P) n (s : NatTransSetoid _ _ _ _) m f ≡ (η P) n γ m f) as KKK.
     - subst s.
       apply (setoid_arr_eq _ _ ((η P) n)).
       intros [].
     - rewrite <-KKK.
+      subst s.
       apply K.
       erewrite proof_irrel.
-      apply J.
+      apply H.
   Qed.
 
   Lemma later_loeb {Γ} (P : Γ [~>] Ω @ tree) :
     ▷ᵢ P ⊢ᵢ P →
     ⊤ᵢ ⊢ᵢ P.
   Proof.
-    intros H n x _.
-    induction n as [| n IHn]; simpl.
-    - now apply (H 0).
-    - apply (H (S n)); simpl.
-      pose proof (IHn (functor.fmap Γ (le_Sn_le n (S n) (le_n (S n))) x)) as J.
-      pose proof (proj1 (eta_comp P _ _ (le_Sn_le n (S n) (le_n (S n))) x n ı) J) as J'.
-      simpl in J'.
+    intros H n γ m f _.
+    revert n γ f.
+    induction m as [| m IHn]; intros n γ f; simpl.
+    - pose proof (H 0 (functor.fmap Γ f γ) 0 ı I) as J.
+      rewrite (eta_comp P _ _ f γ 0 ı) in J.
+      simpl in J.
       erewrite proof_irrel.
-      apply J'.
+      apply J.
+    - apply (H n γ (S m) f).
+      simpl.
+      apply IHn.
   Qed.
 
   Lemma later_eq {Γ A} (t u : Γ [~>] A) :
     ▷ᵢ (t ≡ᵢ u) ⊢ᵢ next ∘ t ≡ᵢ next ∘ u.
   Proof.
-    intros n x He; simpl in *.
-    destruct n as [| n]; simpl.
-    - destruct (Nat.le_0_r 0) as [G1 G2].
-      assert (G1 (le_n 0) = Logic.eq_refl) as ->.
-      { apply proof_irrel. }
-      simpl.
-      reflexivity.
-    - rewrite <-(@fmap_comp _ _ A _ _ _ (le_S_n n n (le_n (S n)))
-                  (le_S_n n (S n) (le_S (S n) (S n) (le_n (S n)))) ((η t) (S n) x)).
-      rewrite <-(@fmap_comp _ _ A _ _ _ (le_S_n n n (le_n (S n)))
-                  (le_S_n n (S n) (le_S (S n) (S n) (le_n (S n)))) ((η u) (S n) x)).
-      simpl.
-      erewrite proof_irrel at 1.
-      erewrite proof_irrel at 1.
-      apply He.
+    intros n γ m f He.
+    destruct m as [| m].
+    - destruct n as [| n]; simpl.
+      + destruct (Nat.le_0_r 0) as [G1 G2].
+        inversion f; subst.
+        assert (G1 f = Logic.eq_refl) as ->.
+        { apply proof_irrel. }
+        simpl.
+        reflexivity.
+      + reflexivity.
+    - destruct n as [| n]; simpl.
+      + inversion f.
+      + simpl in He.
+        rewrite <-(@fmap_comp _ _ A _ _ _ (le_S_n m n f)
+                    (le_S_n n (S n) (le_S (S n) (S n) (le_n (S n))))
+                    ((η t) (S n) γ)).
+        rewrite <-(@fmap_comp _ _ A _ _ _ (le_S_n m n f)
+                    (le_S_n n (S n) (le_S (S n) (S n) (le_n (S n))))
+                    ((η u) (S n) γ)).
+        simpl.
+        erewrite proof_irrel at 1.
+        erewrite proof_irrel at 1.
+        apply He.
   Qed.
 
   Lemma later_eq_inv {Γ A} (t u : Γ [~>] A) :
     next ∘ t ≡ᵢ next ∘ u ⊢ᵢ ▷ᵢ (t ≡ᵢ u).
   Proof.
-    intros n x H.
-    destruct n as [| n].
+    intros n γ m f H.
+    destruct m as [| m].
     - done.
-    - simpl in *.
-      rewrite <-(@fmap_comp _ _ A _ _ _ (le_S_n n n (le_n (S n)))
-                  (le_S_n n (S n) (le_S (S n) (S n) (le_n (S n)))) ((η t) (S n) x)) in H.
-      rewrite <-(@fmap_comp _ _ A _ _ _ (le_S_n n n (le_n (S n)))
-                  (le_S_n n (S n) (le_S (S n) (S n) (le_n (S n)))) ((η u) (S n) x)) in H.
-      simpl in H.
-      erewrite proof_irrel at 1.
-      erewrite proof_irrel at 1.
-      apply H.
+    - simpl.
+      destruct n as [| n].
+      + inversion f.
+      + simpl in H.
+        rewrite <-(@fmap_comp _ _ A _ _ _ (le_S_n m n f)
+                    (le_S_n n (S n) (le_S (S n) (S n) (le_n (S n))))
+                    ((η t) (S n) γ)) in H.
+        rewrite <-(@fmap_comp _ _ A _ _ _ (le_S_n m n f)
+                    (le_S_n n (S n) (le_S (S n) (S n) (le_n (S n))))
+                    ((η u) (S n) γ)) in H.
+        simpl in H.
+        erewrite proof_irrel at 1.
+        erewrite proof_irrel at 1.
+        apply H.
   Qed.
 
   Lemma later_false_em {Γ} (P : Γ [~>] Ω @ tree) : ▷ᵢ P ⊢ᵢ ▷ᵢ ⊥ᵢ ∨ᵢ (▷ᵢ ⊥ᵢ →ᵢ P).
   Proof.
-    intros ???.
-    destruct n as [| n].
+    intros ?????.
+    destruct m as [| m].
     - now left.
     - right.
       intros q e G.
       destruct q as [| q].
-      + simpl.
-        erewrite (proof_irrel (Nat.le_trans 0 (S n) (S n) e (le_n (S n)))).
-        apply (@sieve_closed _ _ ((η P) (S n) γ) _ 0 _ (le_0_n _) H).
+      + simpl in H.
+        simpl.
+        erewrite proof_irrel.
+        apply (@sieve_closed _ _ ((η P) n γ) m 0 (Le.le_Sn_le_stt _ _ f) (le_0_n _)).
+        apply H.
       + exfalso; apply G.
   Qed.
 
   Lemma later_intuit_forall {A} (Φ : A → (GlobalSections (Ω @ tree)))
     : (∀ᵢ a, (▷ᵢ (Φ a))) ⊢ᵢ ▷ᵢ ∀ᵢ a, Φ a.
   Proof.
-    intros n γ H.
-    destruct n as [| n].
+    intros n γ m f H.
+    destruct m as [| m].
     - constructor.
     - intros q e r.
       simpl.
-      erewrite (proof_irrel (Nat.le_trans q n (S n) e (le_Sn_le n (S n) (le_n (S n))))).
+      erewrite proof_irrel.
       apply (H (S q) (le_n_S _ _ e) r).
   Qed.
 
   Lemma later_intuit_exist_false {A} (Φ : A → (GlobalSections (Ω @ tree))) :
     (▷ᵢ ∃ᵢ a, Φ a) ⊢ᵢ ▷ᵢ ⊥ᵢ ∨ᵢ (∃ᵢ a, ▷ᵢ (Φ a)).
   Proof.
-    intros n γ H.
-    destruct n as [| n].
+    intros n γ m f H.
+    destruct m as [| m].
     - now left.
     - right.
       destruct H as [r H].
       exists r.
       simpl.
-      erewrite (proof_irrel (le_Sn_le n (S n) (le_n (S n)))).
+      erewrite proof_irrel.
       apply H.
   Qed.
 

@@ -26,37 +26,29 @@ Section adj.
   Local Open Scope cat_scope.
   Local Open Scope functor_scope.
 
-  Program Definition OfeArrSetoid (A B : ofe) : Setoid.
-  Proof.
-    unshelve econstructor.
-    - apply (ofe_mor A B).
-    - intros f g.
-      apply (f ≡ g)%stdpp.
-    - apply _.
-  Defined.
+  Program Definition OfeArrSetoid (A B : ofe) : Setoid :=
+    {|
+      setoid_carrier := (ofe_mor A B);
+      setoid_eq X Y := (ofe_equiv _ X Y);
+    |}.
 
   Program Definition OfeCat : Category :=
     {|
       Obj := ofe;
       Arr A B := OfeArrSetoid A B;
+      arrow_id A := λne x, x;
+      arrow_comp A B C :=
+        λₛ (f : OfeArrSetoid B C), λₛ (g : OfeArrSetoid A B), λne x, f (g x);
     |}.
   Next Obligation.
-    intros; simpl.
-    refine (λne x, x).
-  Defined.
+    intros; simpl; solve_proper.
+  Qed.
   Next Obligation.
-    intros; simpl.
-    unshelve econstructor.
-    - intros f.
-      unshelve econstructor.
-      + intros g.
-        unshelve econstructor.
-        * intros x.
-          apply f, g, x.
-        * solve_proper.
-      + solve_proper.
-    - solve_proper.
-  Defined.
+    intros; simpl; solve_proper.
+  Qed.
+  Next Obligation.
+    intros; simpl; solve_proper.
+  Qed.
   Next Obligation.
     intros; simpl.
     intros ?; reflexivity.
@@ -72,22 +64,44 @@ Section adj.
 
   Program Definition UnOFE' (O : OfeCat) : tree :=
     {|
-      FO _ := {| setoid_carrier := ofe_car O; setoid_eq := ofe_equiv O |};
-      functor.fmap A B := λₛ _, idS;
+      FO U := {|
+               setoid_carrier := ofe_car O;
+               setoid_eq A B := ∀ n, n <= U → ofe_dist O n A B
+             |};
+      functor.fmap A B := λₛ f, λₛ s, s;
     |}.
   Next Obligation.
-    intros; simpl; intros ?.
-    apply (@ofe_equivalence O).
+    intros.
+    split.
+    - intros ???.
+      reflexivity.
+    - intros ?????.
+      symmetry.
+      now apply H.
+    - intros ???????.
+      etransitivity.
+      + now apply H.
+      + now apply H0.
   Qed.
   Next Obligation.
     intros; simpl.
-    intros ?.
-    apply (@ofe_equivalence O).
+    intros.
+    apply (H n (transitivity H0 f)).
   Qed.
   Next Obligation.
     intros; simpl.
-    intros ?.
-    apply (@ofe_equivalence O).
+    intros.
+    reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros.
+    reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros.
+    reflexivity.
   Qed.
 
   Program Definition UnOFE : OfeCat [⇒] tree :=
@@ -97,57 +111,110 @@ Section adj.
     |}.
   Next Obligation.
     intros; simpl.
-    apply (@ofe_equivalence B).
+    intros.
+    now rewrite (H n H0).
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros.
+    reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros.
+    f_equiv.
     now rewrite H.
   Qed.
   Next Obligation.
     intros; simpl.
-    intros ?.
-    apply (@ofe_equivalence B).
+    intros.
+    reflexivity.
   Qed.
   Next Obligation.
     intros; simpl.
-    intros n a.
+    intros.
+    reflexivity.
+  Qed.
+
+  Program Definition NuOFE' (X : tree) : OfeCat
+    := {|
+      ofe_car := GlobalSections X;
+      ofe_dist (n : NatCat) x y := ∀ n' (f : n' [~>] n), (x n') ≡ (y n');
+      ofe_equiv x y := ∀ a n, x a n ≡ y a n;
+    |}.
+  Next Obligation.
+    intros.
+    split.
+    - intros; simpl.
+      split.
+      + intros H n m f ?.
+        now rewrite H.
+      + intros H m a.
+        apply (H m m (reflexivity m) a).
+    - intros n.
+      split.
+      + unfold dist.
+        now intros ?.
+      + unfold dist.
+        intros ?????.
+        symmetry; now apply H.
+      + unfold dist.
+        intros ??? H G ??.
+        etransitivity.
+        * now apply H.
+        * now apply G.
+    - unfold dist.
+      intros.
+      apply (H n').
+      eapply arrow_comp.
+      + apply Nat.lt_le_incl.
+        apply H0.
+      + apply f.
+  Qed.
+
+  Program Definition NuOFE : tree [⇒] OfeCat :=
+    {|
+      FO X := NuOFE' X;
+      functor.fmap A B := λₛ f, λne x, λₙ t, λₛ r, (f t) (x t r);
+    |}.
+  Next Obligation.
+    intros; simpl.
+    now rewrite H.
+  Qed.
+  Next Obligation.
+    intros.
+    intros ?.
+    simpl.
+    rewrite <-(eta_comp f _ _ f0 ((η x) X a)).
+    simpl.
     f_equiv.
+    rewrite <-(eta_comp x _ _ f0 a).
+    simpl.
+    f_equiv.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros ?????.
+    simpl.
+    intros ?.
+    f_equiv.
+    now apply H.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros ???; simpl.
     apply H.
   Qed.
   Next Obligation.
     intros; simpl.
-    intros n a.
-    apply (@ofe_equivalence A).
+    intros ???; simpl.
+    reflexivity.
   Qed.
   Next Obligation.
     intros; simpl.
-    intros n a.
-    apply (@ofe_equivalence C).
+    intros ???; simpl.
+    reflexivity.
   Qed.
-
-  (* Program Definition NuOFE' (X : tree) : OfeCat. *)
-  (* Proof. *)
-  (*   unshelve econstructor. *)
-  (*   - apply (GlobalSections X). *)
-  (*   - intros n x y. *)
-  (*     apply (x n Point ≡ y n Point). *)
-  (*   - intros x y. *)
-  (*     apply (x ≡ y). *)
-  (*   - split. *)
-  (*     + intros x y. *)
-  (*       split. *)
-  (*       * intros H n. *)
-  (*         apply H. *)
-  (*       * intros H. *)
-  (*         intros n γ. *)
-  (*         apply H0. *)
-  (*         simpl in H0. *)
-  (*     apply setoid_equiv. *)
-  (*     simpl. *)
-  (*     apply _. *)
-
-  (* Program Definition NuOFE : tree [⇒] OfeCat := *)
-  (*   {| *)
-  (*     FO X := UnOFE' X; *)
-  (*     functor.fmap A B := λₛ f, λₙ x, λₛ y, f y; *)
-  (*   |}. *)
 
 End adj.
 
@@ -160,45 +227,112 @@ Section compat.
 
   Local Definition PROP : Type := GlobalSections (Ω @ tree).
 
-  Local Instance PROP_EQUIV : Equiv PROP := λ a b, ∀ n γ, a n γ n ı ≡ b n γ n ı.
-  Local Instance PROP_DIST : Dist PROP := λ n a b, (a n) ≡ (b n).
+  Local Instance PROP_EQUIV : Equiv PROP
+    := λ x y, (ofe_equiv (NuOFE (Ω @ tree)) x y).
+
+  Local Instance PROP_DIST : Dist PROP
+    := λ n x y, (ofe_dist (NuOFE (Ω @ tree)) n x y).
+
+  Lemma PROP_OFE : OfeMixin PROP.
+  Proof.
+    split.
+    - intros x y.
+      split.
+      + intros H n m f γ d g.
+        apply (H m γ d g).
+      + intros H n γ m f.
+        apply (H n n ı γ m f).
+    - intros n.
+      unfold dist.
+      unfold PROP_DIST.
+      split.
+      + now intros a.
+      + now intros a b H.
+      + intros a b c H G m f γ m' g.
+        etransitivity.
+        * apply (H m f γ m' g).
+        * apply (G m f γ m' g).
+    - intros n m x y H f.
+      intros p g γ q h.
+      unshelve eapply (H p _ γ q h).
+      simpl.
+      transitivity m.
+      + apply g.
+      + apply Nat.lt_le_incl, f.
+  Qed.
+
+  Canonical Structure PROPO : ofe := Ofe PROP PROP_OFE.
+
+  Program Definition PROP_compl : Compl PROPO
+    := λ c, λₙ n, λₛ γ, c n n γ.
+  Next Obligation.
+    intros; simpl.
+    intros ??.
+    apply (@setoid_arr_eq _ _ ((η c n) n) a₁ a₂ H d f).
+  Qed.
+  Next Obligation.
+    intros.
+    intros ???.
+    simpl.
+    rewrite <-(eta_comp (c X) _ _ f a d f0).
+    simpl.
+    match goal with
+    | |- context G [@Build_NatTrans ?T ?d ?e ?q ?r ?f] =>
+        set (s := @Build_NatTrans T d e q r f)
+    end.
+    rewrite <-(chain_cauchy c Y X f Y ı s d f0).
+    reflexivity.
+  Qed.
+
+  Program Definition PROP_COFE : Cofe PROPO
+    := {| compl := PROP_compl |}.
+  Next Obligation.
+    intros n c.
+    simpl.
+    unfold PROP_compl.
+    intros m f γ p g; simpl.
+    rewrite (chain_cauchy c m n f m ı γ p g).
+    reflexivity.
+  Qed.
+
   Local Definition PROP_entails : PROP → PROP → Prop := λ a b, a ⊢ᵢ b.
 
   Lemma intuit_all_ne A n :
     Proper (pointwise_relation _ (dist n) ==> dist n) (intuit_all A).
   Proof.
-    intros ??????.
+    intros ????????.
     split; intros G; intros q e r.
-    - rewrite <-(H r a q (f ∘ e)).
-      apply G.
-    - rewrite (H r a q (f ∘ e)).
-      apply G.
+    - rewrite <-(H r n' f a q (f0 ∘ e)).
+      apply (G q e).
+    - rewrite (H r n' f a q (f0 ∘ e)).
+      apply (G q e).
   Qed.
 
   Lemma intuit_exist_ne A n :
     Proper (pointwise_relation _ (dist n) ==> dist n) (intuit_exist A).
   Proof.
-    intros ??????.
+    intros ????????.
     split; intros [r G]; exists r.
-    - apply (H r a d f).
+    - rewrite <-(H r n' f a d).
       apply G.
-    - apply (H r a d f).
+    - rewrite (H r n' f a d).
       apply G.
   Qed.
 
-  Lemma equiv_entails (P Q : PROP) : (PROP_EQUIV P Q) ↔ (PROP_entails P Q) ∧ (PROP_entails Q P).
+  Lemma equiv_entails (P Q : PROP) : (PROP_EQUIV P Q)
+                                       ↔ (PROP_entails P Q) ∧ (PROP_entails Q P).
   Proof.
     split.
     - intros H.
       split.
-      + intros n γ G.
-        rewrite <-(H n γ).
+      + intros n γ m f G.
+        rewrite <-(H n γ m f).
         apply G.
-      + intros n γ G.
-        rewrite (H n γ).
+      + intros n γ m f G.
+        rewrite (H n γ m f).
         apply G.
     - intros [H1 H2].
-      intros n γ.
+      intros n γ m f.
       split; intros G.
       + apply H1.
         apply G.
@@ -217,65 +351,65 @@ Section compat.
 
   Lemma pure_ne n : Proper (iff ==> dist n) pure.
   Proof.
-    intros P Q H γ m f.
+    intros P Q H γ n' e ??.
     apply H.
   Qed.
 
   Lemma conj_ne : NonExpansive2 conj.
   Proof.
-    intros n P Q H X Y G γ m f.
+    intros n P Q H X Y G γ n' e ??.
     split.
     - intros J.
       split; simpl.
-      + rewrite <-(H γ m f).
+      + rewrite <-(H γ n' e d f).
         apply J.
-      + rewrite <-(G γ m f).
+      + rewrite <-(G γ n' e d f).
         apply J.
     - intros J.
       split; simpl.
-      + rewrite (H γ m f).
+      + rewrite (H γ n' e d f).
         apply J.
-      + rewrite (G γ m f).
+      + rewrite (G γ n' e d f).
         apply J.
   Qed.
 
   Lemma disj_ne : NonExpansive2 disj.
   Proof.
-    intros n P Q H X Y G γ m f.
+    intros n P Q H X Y G γ n' e ??.
     split.
     - intros J.
       destruct J as [J | J].
       + left.
-        rewrite <-(H γ m f).
+        rewrite <-(H γ n' e d f).
         apply J.
       + right.
-        rewrite <-(G γ m f).
+        rewrite <-(G γ n' e d f).
         apply J.
     - intros J.
       destruct J as [J | J].
       + left.
-        rewrite (H γ m f).
+        rewrite (H γ n' e d f).
         apply J.
       + right.
-        rewrite (G γ m f).
+        rewrite (G γ n' e d f).
         apply J.
   Qed.
 
   Lemma impl_ne : NonExpansive2 presheaf.impl.
   Proof.
-    intros n P Q H X Y G γ m f.
+    intros n P Q H X Y G γ ????.
     split.
     - intros J.
       intros q e K.
-      apply (G γ q (f ∘ e)).
+      rewrite <-(G γ f a q).
       apply J.
-      rewrite (H γ q (f ∘ e)).
+      rewrite (H γ f a q).
       apply K.
     - intros J.
       intros q e K.
-      apply (G γ q (f ∘ e)).
+      rewrite (G γ f a q).
       apply J.
-      rewrite <-(H γ q (f ∘ e)).
+      rewrite <-(H γ f a q).
       apply K.
   Qed.
 
@@ -283,21 +417,21 @@ Section compat.
 
   Lemma later_ne : NonExpansive nat.later.
   Proof.
-    intros n P Q H γ m f.
+    intros n P Q H m γ f ??.
     split.
     - intros G.
-      destruct m as [| m].
+      destruct d as [| d].
       + constructor.
       + simpl.
         simpl in G.
-        erewrite <-(H γ m _).
+        rewrite <-(H m γ f d).
         apply G.
     - intros G.
-      destruct m as [| m].
+      destruct d as [| d].
       + constructor.
       + simpl.
         simpl in G.
-        erewrite (H γ m _).
+        erewrite (H m γ f d).
         apply G.
   Qed.
 
@@ -399,112 +533,190 @@ Section compat.
     - exact: later_false_em.
   Qed.
 
-  (* why? *)
-  Lemma PROP_OFE : OfeMixin PROP.
-  Proof.
-    split.
-    - intros x y.
-      split.
-      + intros H n γ m f.
-        pose proof (H n γ).
-        admit.
-      + intros H n.
-        admit.
-    - intros n.
-      unfold dist.
-      unfold PROP_DIST.
-      split.
-      + now intros a.
-      + now intros a b H.
-      + intros a b c H G.
-        etransitivity; eassumption.
-    - intros n m x y H f.
-      intros γ p g.
-      simpl in g.
-      assert (fg : p <= n).
-      {
-        etransitivity.
-        - apply g.
-        - apply Nat.lt_le_incl, f.
-      }
-      pose proof (H Point p fg).
-      admit.
-  Admitted.
-
-  Lemma PROP_COFE : Cofe (Ofe PROP PROP_OFE).
-  Proof.
-    unshelve econstructor.
-    - intros c.
-      admit.
-    - admit.
-  Admitted.
-
   Canonical Structure TreePropI : bi.
   Proof.
     refine {|
-      bi_bi_mixin := psh_nat_bi_mixin;
-      bi_bi_persistently_mixin := psh_nat_bi_persistently_mixin;
-      bi_bi_later_mixin := psh_nat_bi_later_mixin;
+        bi_ofe_mixin := ofe_mixin_of PROP;
+        bi_cofe_aux := PROP_COFE;
+        bi_bi_mixin := psh_nat_bi_mixin;
+        bi_bi_persistently_mixin := psh_nat_bi_persistently_mixin;
+        bi_bi_later_mixin := psh_nat_bi_later_mixin;
       |}.
-    apply PROP_COFE.
   Defined.
 
   Global Instance PROP_pure_forall : BiPureForall PROP.
   Proof.
     intros A ϕ.
-    intros ???.
+    intros ?????.
     unfold bi_pure.
     intros a.
-    apply (H n ı a).
+    apply (H m ı a).
   Qed.
 
-  Transparent nat.later.
-
-  (* Global Instance PROP_later_contractive : BiLaterContractive TreePropI. *)
-  (* Proof. *)
-  (*   intros n P Q H a i f. *)
-  (*   destruct i as [| i]. *)
-  (*   - done. *)
-  (*   - unfold bi_later, nat.later. *)
-  (*     simpl. *)
-  (*     split; intros G. *)
-  (*     + destruct n as [| n]. *)
-  (*       * inversion f. *)
-  (*       * destruct H. *)
-  (*         simpl in f. *)
-  (* Admitted. *)
-
-  Opaque nat.later.
+  Global Instance PROP_BiLöb : BiLöb TreePropI.
+  Proof.
+    intros P H.
+    apply (later_loeb _ H).
+  Qed.
 
   Lemma PROP_plainly_mixin : BiPlainlyMixin TreePropI id.
   Proof.
     split; try done.
     - intros; unfold id, plainly.
-      intros ??????.
-      apply H.
+      intros ????????.
+      apply (H n' f a d f0).
     - intros P Q. apply conj_elim_l.
   Qed.
 
   Global Instance PROP_plainlyC : BiPlainly TreePropI :=
     {| bi_plainly_mixin := PROP_plainly_mixin |}.
 
-  (* Lemma PROP_internal_eq_mixin : BiInternalEqMixin TreePropI (@PROP_internal_eq). *)
-  (* Proof. *)
-  (*   split. *)
-  (*   - exact: internal_eq_ne. *)
-  (*   - exact: @internal_eq_refl. *)
-  (*   - exact: @internal_eq_rewrite. *)
-  (*   - exact: @fun_ext. *)
-  (*   - exact: @sig_eq. *)
-  (*   - exact: @discrete_eq_1. *)
-  (*   - exact: @later_eq_1. *)
-  (*   - exact: @later_eq_2. *)
+  (* Program Definition element {A : PSh NatCat} (a : GlobalSections A) *)
+  (*   : 𝟙 @ tree [~>] A := λₙ x, a x. *)
+  (* Next Obligation. *)
+  (*   intros; simpl. *)
+  (*   intros ?; simpl. *)
+  (*   rewrite <-(eta_comp a _ _ f a0). *)
+  (*   simpl. *)
+  (*   f_equiv. *)
+  (*   intros []. *)
   (* Qed. *)
-  (* Global Instance PROP_internal_eq : BiInternalEq TreePropI := *)
-  (*   {| bi_internal_eq_mixin := PROP_internal_eq_mixin |}. *)
+
+  Program Definition UnOFE_elem {A : ofe} (a : A)
+    : GlobalSections (UnOFE A) :=
+    λₙ _, λₛ _, a.
+  Next Obligation.
+    intros; now simpl.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros; simpl.
+    reflexivity.
+  Qed.
+
+  Local Program Definition PROP_internal_eq {A : ofe} (a1 a2 : A) : PROP
+    := ((UnOFE_elem a1) ≡ᵢ (UnOFE_elem a2))%logic.
+
+  Lemma internal_eq_ne (A : ofe) : NonExpansive2 (@PROP_internal_eq A).
+  Proof.
+    intros n x x' Hx y y' Hy m f ? p g; simpl.
+    clear a.
+    simpl in *.
+    split; intros Hz; intros q Q.
+    - rewrite <-(dist_le _ _ _ _ Hx); [| lia].
+      rewrite <-(dist_le _ _ _ _ Hy); [| lia].
+      now apply Hz.
+    - rewrite (dist_le _ _ _ _ Hx); [| lia].
+      rewrite (dist_le _ _ _ _ Hy); [| lia].
+      now apply Hz.
+  Qed.
+
+  Local Program Definition liftPred {A : ofe} (Ψ : A → TreePropI)
+    {HΨ : NonExpansive Ψ}
+    : UnOFE A [~>] (Ω @ tree) := λₙ x, λₛ y, (Ψ y x Point).
+  Next Obligation.
+    intros; simpl.
+    intros; simpl.
+    split; intros G.
+    - apply (HΨ x a₁ a₂ (H x (le_n x))); [apply ı | apply G].
+    - apply (HΨ x a₁ a₂ (H x (le_n x))); [apply ı | apply G].
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros; simpl.
+    rewrite <-(eta_comp (Ψ a) _ _ f Point d f0).
+    simpl.
+    unshelve eapply (@setoid_arr_eq _ _ (Ψ a Y) _ _ _ d f0).
+    intros [].
+  Qed.
+
+  Lemma PROP_internal_eq_mixin : BiInternalEqMixin TreePropI (@PROP_internal_eq).
+  Proof.
+    split.
+    - apply internal_eq_ne.
+    - intros.
+      eapply entails_trans.
+      + apply true_intro.
+      + apply (@eq_refl NatCat (𝟙 @ tree) (UnOFE A) (UnOFE_elem a)).
+    - intros.
+      eapply entails_trans.
+      + apply (@eq_subst NatCat (𝟙 @ tree) (UnOFE A) (Ω @ tree)
+                 (UnOFE_elem a) (UnOFE_elem b) (liftPred Ψ)).
+      + apply impl_intro.
+        intros ???? [H0 H1].
+        simpl in *.
+        rewrite (@setoid_arr_eq _ _ ((η Ψ b) n) γ Point (PointUnique γ) m f).
+        erewrite proof_irrel.
+        apply (H0 m (le_n _)).
+        erewrite proof_irrel.
+        apply (proj1 (@setoid_arr_eq _ _ ((η Ψ a) n) γ Point (PointUnique γ) m f) H1).
+    - intros.
+      intros ??????? x.
+      simpl in *.
+      apply (H n0 H0 x n0 (le_n _)).
+    - intros ? ? [? ?] [? ?].
+      intros ???????.
+      simpl in *.
+      now apply H.
+    - intros.
+      intros ???? G.
+      unfold bi_pure.
+      simpl.
+      apply H.
+      apply (G 0).
+      apply le_0_n.
+    - intros ??? ? ??? G.
+      simpl in G.
+      unfold bi_later.
+      simpl.
+      apply (@later_eq_inv (𝟙 @ tree) (UnOFE A) (UnOFE_elem x) (UnOFE_elem y)).
+      simpl.
+      destruct n as [| n]; simpl.
+      + inversion f; subst.
+        destruct (Nat.le_0_r 0) as [G1 G2].
+        now rewrite (proof_irrel (G1 f) Logic.eq_refl).
+      + destruct m as [| m]; simpl.
+        * reflexivity.
+        * intros.
+          apply (G (S n0) (le_n_S _ _ H)).
+          apply Arith_prebase.le_lt_n_Sm, le_n.
+    - intros.
+      intros ???? H.
+      unfold bi_later in H.
+      simpl in H.
+      pose proof (@later_eq (𝟙 @ tree) (UnOFE A) (UnOFE_elem x) (UnOFE_elem y) n γ m f H) as G.
+      destruct n as [| n]; simpl in *.
+      + inversion f; subst.
+        intros ? J; inversion J; subst.
+        constructor.
+        intros ? J'; inversion J'.
+      + destruct m as [| m]; simpl in *.
+        * intros ? J; inversion J; subst.
+          constructor.
+          intros ? J'; inversion J'.
+        * intros p P.
+          constructor.
+          intros q Q.
+          simpl.
+          apply G.
+          lia.
+  Qed.
+
+  Global Instance PROP_internal_eq_inst : BiInternalEq TreePropI :=
+    {| bi_internal_eq_mixin := PROP_internal_eq_mixin |}.
 
   (* Global Instance PROP_prop_ext : BiPropExt TreePropI. *)
-  (* Proof. exact: prop_ext_2. Qed. *)
+  (* Proof. *)
+  (*   intros ?????? [H1 H2]. *)
+  (*   unfold internal_eq, bi_internal_eq_internal_eq. *)
+  (*   simpl. *)
+  (*   intros r R. *)
+  (*   intros ?????. *)
+  (*   simpl in *. *)
+  (*   split; intros H. *)
+  (*   (* - pose proof (H1 d).  *) *)
+  (*   (*   simpl in H0. *) *)
+  (* Admitted. *)
 
   Global Instance PROP_affine : BiAffine TreePropI | 0.
   Proof. intros P. exact: pure_intro. Qed.
@@ -539,8 +751,14 @@ Module PROP.
       apply 0.
     Qed.
 
-    (* Lemma internal_eq_soundness {A : tree} (x y : GlobalSections A) : (⊢@{TreePropI} x ≡ y) → x ≡ y. *)
-    (* Proof. apply internal_eq_soundness. Qed. *)
+    Lemma internal_eq_soundness {A : ofe} (x y : A) : (⊢@{TreePropI} x ≡ y) → x ≡ y.
+    Proof.
+      intros ?.
+      apply equiv_dist.
+      intros n.
+      apply (@soundness_eq NatCat (UnOFE A) (UnOFE A)
+               (UnOFE_elem x) (UnOFE_elem y) H n Point n (le_n _)).
+    Qed.
 
     Lemma later_soundness (P : TreePropI) : (⊢ ▷ P) → ⊢ P.
     Proof.
@@ -556,11 +774,10 @@ Opaque PROP_entails.
 
 Require Import iris.proofmode.proofmode.
 
-Example test1 {A B : PROP} : ⊢ ∀ n : nat, ⌜n < 0⌝ -∗ A ∗ B -∗ True.
+Example test1 {A B : PROP} : ⊢ ∀ n : nat, ⌜n < 0⌝ -∗ A ∗ B -∗ A.
 Proof.
   iIntros (n) "%H (a & b)".
-  iPureIntro.
-  constructor.
+  iApply "a".
 Qed.
 
 Example test2 : ⊢@{TreePropI} ⌜∀ n : nat, n >= 0⌝.
@@ -573,4 +790,12 @@ Example test3 : ∀ n : nat, n >= 0.
 Proof.
   apply PROP.pure_soundness.
   apply test2.
+Qed.
+
+Example test4 {A : ofe} : ⊢@{TreePropI} (∃ (y : A), ∀ x, x ≡ y) -∗ (∀ x, ∃ (y : A), x ≡ y).
+Proof.
+  iIntros "(%y & H)".
+  iIntros (x).
+  iExists y.
+  iApply "H".
 Qed.

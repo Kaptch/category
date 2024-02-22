@@ -1,20 +1,20 @@
 From category Require Import
-                      base
-                      setoid
-                      category
-                      sets
-                      terminal
-                      functor
-                      limit
-                      prod
-                      exp
-                      pullback
-                      subobject
-                      classes.limits
-                      classes.exp
-                      classes.subobject
-                      instances.sets
-                      instances.presheaf.
+  base
+  setoid
+  category
+  sets
+  terminal
+  functor
+  limit
+  prod
+  exp
+  pullback
+  subobject
+  classes.limits
+  classes.exp
+  classes.subobject
+  instances.sets
+  instances.presheaf.
 
 Declare Scope logic.
 Delimit Scope logic_scope with logic.
@@ -382,7 +382,7 @@ Section IntLogic.
   Notation "'⌜' P '⌝ᵢ'" := (pure P) : logic_scope.
 
   Definition entails {Γ : PSh C} (P Q : Γ [~>] Ω @ (PSh C)) : Prop :=
-    ∀ n γ, P n γ n ı → Q n γ n ı.
+    ∀ n γ m f, P n γ m f → Q n γ m f.
 
   Infix "⊢ᵢ" := entails (at level 99, no associativity) : logic_scope.
 
@@ -391,7 +391,7 @@ Section IntLogic.
   Lemma entails_refl {Γ : PSh C} (P : Γ [~>] Ω @ (PSh C)) :
     P ⊢ᵢ P.
   Proof.
-    now intros n x Px.
+    now intros n γ m f Px.
   Qed.
 
   Lemma entails_trans {Γ : PSh C} (P Q R : Γ [~>] Ω @ (PSh C)) :
@@ -399,7 +399,7 @@ Section IntLogic.
     Q ⊢ᵢ R →
     P ⊢ᵢ R.
   Proof.
-    intros H1 H2 n x Px.
+    intros H1 H2 n γ m f Px.
     apply H2, H1, Px.
   Qed.
 
@@ -407,13 +407,13 @@ Section IntLogic.
     P ⊢ᵢ Q →
     P ∘ t ⊢ᵢ Q ∘ t.
   Proof.
-    now intros H n x Ptx; apply H.
+    now intros H n γ m f Ptx; apply H.
   Qed.
 
   Lemma eq_refl {Γ A : PSh C} (t : Γ [~>] A) :
     ⊤ᵢ ⊢ᵢ t ≡ᵢ t.
   Proof.
-    intros ???.
+    intros ?????.
     simpl.
     reflexivity.
   Qed.
@@ -421,7 +421,7 @@ Section IntLogic.
   Lemma eq_sym {Γ A : PSh C} (t u : Γ [~>] A) :
     t ≡ᵢ u ⊢ᵢ u ≡ᵢ t.
   Proof.
-    intros n x H; simpl.
+    intros n γ m f H; simpl.
     rewrite H.
     reflexivity.
   Qed.
@@ -429,17 +429,17 @@ Section IntLogic.
   Lemma eq_trans {Γ A : PSh C} (t u v : Γ [~>] A) :
     t ≡ᵢ u ∧ᵢ u ≡ᵢ v ⊢ᵢ t ≡ᵢ v.
   Proof.
-    intros n x [H1 H2]; simpl in *.
+    intros n γ m f [H1 H2]; simpl in *.
     now rewrite H1, H2.
   Qed.
 
   Lemma eq_subst {Γ A B : PSh C} (t u : Γ [~>] A) (D : A [~>] B) :
     t ≡ᵢ u ⊢ᵢ D ∘ t ≡ᵢ D ∘ u.
   Proof.
-    intros n x He; simpl in *.
+    intros n γ m f He; simpl in *.
     unfold compose; simpl.
-    rewrite <-(@eta_comp _ _ _ _ D n n ı ((η u) n x)).
-    rewrite <-(@eta_comp _ _ _ _ D n n ı ((η t) n x)).
+    rewrite <-(@eta_comp _ _ _ _ D n m f ((η u) n γ)).
+    rewrite <-(@eta_comp _ _ _ _ D n m f ((η t) n γ)).
     simpl.
     unfold compose; simpl.
     f_equiv.
@@ -449,9 +449,9 @@ Section IntLogic.
   Lemma eq_coerce {Γ : PSh C} (P Q : Γ [~>] Ω @ (PSh C)) :
     P ≡ᵢ Q ∧ᵢ P ⊢ᵢ Q.
   Proof.
-    intros n x [He HP]; simpl in *.
-    specialize (He n ı).
-    rewrite arrow_comp_id_l in He.
+    intros n γ m f [He HP]; simpl in *.
+    specialize (He m ı).
+    rewrite arrow_comp_id_r in He.
     now apply He.
   Qed.
 
@@ -472,14 +472,14 @@ Section IntLogic.
     R ⊢ᵢ Q →
     R ⊢ᵢ P ∧ᵢ Q.
   Proof.
-    intros HP HQ n x Rx; simpl.
+    intros HP HQ n γ m f Rx; simpl.
     split; [apply HP | apply HQ]; assumption.
   Qed.
 
   Lemma conj_elim_l {Γ : PSh C} {P Q : Γ [~>] Ω @ (PSh C)} :
     P ∧ᵢ Q ⊢ᵢ P.
   Proof.
-    intros n x [Px Qx].
+    intros n γ m f [Px Qx].
     simpl in *.
     assumption.
   Qed.
@@ -487,7 +487,7 @@ Section IntLogic.
   Lemma conj_elim_r {Γ : PSh C} {P Q : Γ [~>] Ω @ (PSh C)} :
     P ∧ᵢ Q ⊢ᵢ Q.
   Proof.
-    intros n x [Px Qx].
+    intros n γ m f [Px Qx].
     simpl in *.
     assumption.
   Qed.
@@ -495,14 +495,14 @@ Section IntLogic.
   Lemma disj_intro_l {Γ : PSh C} {P Q : Γ [~>] Ω @ (PSh C)} :
     P ⊢ᵢ P ∨ᵢ Q.
   Proof.
-    intros n x Px; left; simpl in *.
+    intros n γ m f Px; left; simpl in *.
     assumption.
   Qed.
 
   Lemma disj_intro_r {Γ : PSh C} {P Q : Γ [~>] Ω @ (PSh C)} :
     Q ⊢ᵢ P ∨ᵢ Q.
   Proof.
-    intros n x Px; right; simpl in *.
+    intros n γ m f Px; right; simpl in *.
     assumption.
   Qed.
 
@@ -511,45 +511,30 @@ Section IntLogic.
     Q ⊢ᵢ R →
     P ∨ᵢ Q ⊢ᵢ R.
   Proof.
-    intros HP HQ n x [Px | Qx]; [apply HP | apply HQ]; assumption.
+    intros HP HQ n γ m f [Px | Qx]; [apply HP | apply HQ]; assumption.
   Qed.
 
   Lemma impl_intro {Γ : PSh C} {P Q R : Γ [~>] Ω @ (PSh C)} :
     R ∧ᵢ P ⊢ᵢ Q →
     R ⊢ᵢ P →ᵢ Q.
   Proof.
-    intros H n x Rx j Hj Px; simpl in *.
-    specialize (H j (fmap Γ Hj x)).
-    simpl in H.
-    rewrite arrow_comp_id_l.
-    rewrite arrow_comp_id_l in Px.
-    pose proof (@eta_comp _ _ _ _ Q _ _ Hj x j ı) as G.
-    simpl in G.
-    unfold compose in G; simpl in G.
-    rewrite arrow_comp_id_r in G.
-    apply G; clear G.
-    apply H.
+    intros H n γ m f Rx j Hj Px; simpl in *.
+    apply (H n γ j (f ∘ Hj)).
     split.
-    - apply (@eta_comp _ _ _ _ R _ _ Hj x j ı).
-      simpl.
-      apply sieve_closed.
-      pose proof (@sieve_closed C _ ((η R) n x) n j ı Hj Rx) as K.
-      rewrite arrow_comp_id_l in K.
-      apply K.
-    - apply (@eta_comp _ _ _ _ P _ _ Hj x j ı).
-      simpl.
-      now rewrite arrow_comp_id_r.
+    - apply sieve_closed.
+      apply Rx.
+    - apply Px.
   Qed.
 
   Lemma impl_elim {Γ : PSh C} {P Q : Γ [~>] Ω @ (PSh C)} :
     (P →ᵢ Q) ∧ᵢ P ⊢ᵢ Q.
   Proof.
-    intros n x [H Px]; simpl in *.
-    specialize (H n ı).
-    assert (Px' : (η P) n x n (ı ∘ ı)).
-    { now rewrite arrow_comp_id_l. }
+    intros n γ m f [H Px]; simpl in *.
+    specialize (H m ı).
+    assert (Px' : (η P) n γ m (f ∘ ı)).
+    { now rewrite arrow_comp_id_r. }
     specialize (H Px').
-    rewrite arrow_comp_id_l in H.
+    rewrite arrow_comp_id_r in H.
     apply H.
   Qed.
 
@@ -557,68 +542,94 @@ Section IntLogic.
     R ∘ π₁ ⊢ᵢ P →
     R ⊢ᵢ ∀ᵢ[A] P.
   Proof.
-    intros H n x Rx j Hj y; simpl.
+    intros H n γ m f Rx j Hj y; simpl.
     apply H; simpl.
     unfold compose; simpl.
-    apply (@eta_comp _ _ _ _ R _ _ (ı ∘ Hj) x j ı).
+    apply (@eta_comp _ _ _ _ R _ _ (f ∘ Hj) γ j ı).
     simpl.
-    rewrite arrow_comp_id_l, arrow_comp_id_r.
-    pose proof (@sieve_closed C _ ((η R) n x) n j ı Hj Rx) as K.
-    rewrite arrow_comp_id_l in K.
-    apply K.
+    rewrite arrow_comp_id_r.
+    apply sieve_closed.
+    apply Rx.
   Qed.
 
   Lemma all_elim {Γ A : PSh C} (P : Γ ×ₒ A @ (PSh C) [~>] Ω @ (PSh C)) (t : Γ [~>] A) :
     ∀ᵢ[A] P ⊢ᵢ P ∘ ⟨ ı , t ⟩.
   Proof.
-    intros n x H; simpl in *.
+    intros n γ m f H; simpl.
     unfold compose; simpl.
     unfold id; simpl.
-    specialize (H n ı ((η t) n x)).
-    eapply (@setoid_arr_eq _ _ ((η P) n)); [| apply H].
-    split; [| reflexivity].
-    simpl.
-    rewrite arrow_comp_id_l.
-    now rewrite (@fmap_id (C op) SetoidCat Γ n x).
+    simpl in f.
+    specialize (H m ı ((η t) m (fmap Γ f γ))).
+    simpl in H.
+    pose proof (eta_comp P _ _ (f ∘ ı) (γ, (η t) n γ) m ı) as G.
+    simpl in G.
+    unfold compose in G.
+    simpl in G.
+    rewrite <-(arrow_comp_id_r f).
+    rewrite <-(arrow_comp_id_r (f ∘ ı)).
+    apply G.
+    assert ((η P) m (fmap Γ (f ∘ ı) γ, fmap A (f ∘ ı) ((η t) n γ)) m ı
+                  ≡ (η P) m (fmap Γ (f ∘ ı) γ, (η t) m (fmap Γ f γ)) m ı) as ->; [| apply H].
+    {
+      apply (@setoid_arr_eq _ _ ((η P) m)).
+      split; [reflexivity |].
+      rewrite (eta_comp t _ _ f γ).
+      simpl.
+      unfold compose; simpl.
+      f_equiv.
+      now rewrite arrow_comp_id_r.
+    }
   Qed.
 
   Lemma exist_intro {Γ A : PSh C} (P : Γ ×ₒ A @ (PSh C) [~>] Ω @ (PSh C)) (t : Γ [~>] A) :
     P ∘ (⟨ ı , t ⟩) ⊢ᵢ ∃ᵢ[A] P.
   Proof.
-    intros n x Px; simpl in *.
-    exists (t n x).
-    unfold compose in Px; simpl in Px.
-    eapply (@setoid_arr_eq _ _ ((η P) n)); [| apply Px].
-    split; [| reflexivity].
+    intros n γ m f Px.
+    exists (t m (fmap Γ f γ)).
+    simpl in Px; unfold compose, id in Px; simpl in Px.
     simpl.
-    now rewrite (@fmap_id (C op) SetoidCat Γ n x).
+    assert ((η P) m (fmap Γ f γ, (η t) m (fmap Γ f γ)) m ı ≡
+              (η P) m (fmap Γ f γ, fmap A f ((η t) n γ)) m ı) as ->.
+    {
+      apply (@setoid_arr_eq _ _ ((η P) m)).
+      split; [reflexivity | simpl].
+      apply (eta_comp t _ _ f).
+    }
+    assert (G : (η P) m (fmap (bin_prod_obj _ _ (Γ ×ₒ A @ PSh C)) f (γ, (η t) n γ)) m ı);
+      [| apply G].
+    rewrite (eta_comp P _ _ f (γ, (η t) n γ) m ı).
+    simpl.
+    apply sieve_closed.
+    apply Px.
   Qed.
 
   Lemma exist_elim {Γ A} (P : Γ ×ₒ A @ (PSh C) [~>] Ω @ (PSh C)) (Q : Γ [~>] Ω @ (PSh C)) :
     P ⊢ᵢ Q ∘ π₁ → ∃ᵢ[A] P ⊢ᵢ Q.
   Proof.
-    intros H n x [y Py]; simpl in *.
+    intros H n γ m f [y Py]; simpl in *.
     unfold compose in *; simpl in *.
-    apply (H n (x, y)).
-    assert ((η P) n (x, y) n ı ≡ (η P) n (fmap Γ ı x, y) n ı) as ->; [| assumption].
-    apply (@setoid_arr_eq _ _ ((η P) n)).
-    split; simpl.
-    - symmetry.
-      apply (@fmap_id (C op) SetoidCat Γ n x).
-    - reflexivity.
+    pose proof (H m ((fmap Γ f γ), y) m ı) as J.
+    simpl in J.
+    pose proof (eta_comp Q _ _ f γ m ı) as J'.
+    simpl in J'.
+    unfold compose in J'.
+    rewrite arrow_comp_id_r in J'.
+    apply J'.
+    apply J.
+    apply Py.
   Qed.
 
   Lemma pure_intro {Γ : PSh C} {P : Γ [~>] Ω @ (PSh C)} {Q : Prop} (q : Q) :
     P ⊢ᵢ ⌜ Q ⌝ᵢ.
   Proof.
-    intros H n x.
+    intros H n γ m f.
     apply q.
   Qed.
 
   Lemma pure_elim {Γ : PSh C} {P : Γ [~>] Ω @ (PSh C)}
     (φ : Prop) : (φ → ⊤ᵢ ⊢ᵢ P) → (⌜ φ ⌝ᵢ) ⊢ᵢ P.
   Proof.
-    intros H n x G.
+    intros H n γ m f G.
     apply H.
     - apply G.
     - constructor.
@@ -628,7 +639,7 @@ Section IntLogic.
     : (∀ a, P ⊢ᵢ Ψ a) → P ⊢ᵢ ∀ᵢ a, Ψ a.
   Proof.
     intros H.
-    intros ??????.
+    intros ????????.
     apply sieve_closed.
     now apply H.
   Qed.
@@ -636,16 +647,16 @@ Section IntLogic.
   Lemma intuit_all_elim {A} {Ψ : A → (GlobalSections (Ω @ PSh C))} a
     : (∀ᵢ a, Ψ a) ⊢ᵢ Ψ a.
   Proof.
-    intros n γ H.
-    specialize (H n ı a).
-    rewrite arrow_comp_id_l in H.
+    intros n γ m f H.
+    specialize (H m ı a).
+    rewrite arrow_comp_id_r in H.
     apply H.
   Qed.
 
   Lemma intuit_exist_intro {A} {Ψ : A → (GlobalSections (Ω @ PSh C))} a
     : Ψ a ⊢ᵢ ∃ᵢ a, Ψ a.
   Proof.
-    intros n γ H.
+    intros n γ m f H.
     exists a.
     apply H.
   Qed.
@@ -653,8 +664,8 @@ Section IntLogic.
   Lemma intuit_exist_elim {A} (Φ : A → (GlobalSections (Ω @ PSh C))) Q
     : (∀ a, Φ a ⊢ᵢ Q) → (∃ᵢ a, Φ a) ⊢ᵢ Q.
   Proof.
-    intros H n γ [r G].
-    apply (H r n γ G).
+    intros H n γ m f [r G].
+    apply (H r n γ m f G).
   Qed.
 
   Opaque entails true false conj disj impl all exist pure intuit_all intuit_exist.
@@ -875,7 +886,7 @@ Section IntLogic.
     ⊤ᵢ ⊢ᵢ @pure (𝟙 @ (PSh C)) P → P.
   Proof.
     intros H.
-    apply (H n Point).
+    apply (H n Point n ı).
     constructor.
   Qed.
 
@@ -886,7 +897,7 @@ Section IntLogic.
     intros x.
     assert (G : (η ⊤ᵢ) x Point x ı).
     { constructor. }
-    pose proof (H x Point G) as J.
+    pose proof (H x Point x ı G) as J.
     simpl in J.
     rewrite (@fmap_id _ _ A x ((η t) x Point)) in J.
     rewrite (@fmap_id _ _ A x ((η u) x Point)) in J.
