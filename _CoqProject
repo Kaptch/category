@@ -35,6 +35,7 @@ theories/instances/presheaf.v
 
 theories/classes/exp.v
 theories/classes/limits.v
+theories/classes/colimits.v
 theories/classes/subobject.v
 
 theories/internal_lang/presheaf.v
