@@ -571,17 +571,6 @@ Section compat.
   Global Instance PROP_plainlyC : BiPlainly TreePropI :=
     {| bi_plainly_mixin := PROP_plainly_mixin |}.
 
-  (* Program Definition element {A : PSh NatCat} (a : GlobalSections A) *)
-  (*   : 𝟙 @ tree [~>] A := λₙ x, a x. *)
-  (* Next Obligation. *)
-  (*   intros; simpl. *)
-  (*   intros ?; simpl. *)
-  (*   rewrite <-(eta_comp a _ _ f a0). *)
-  (*   simpl. *)
-  (*   f_equiv. *)
-  (*   intros []. *)
-  (* Qed. *)
-
   Program Definition UnOFE_elem {A : ofe} (a : A)
     : GlobalSections (UnOFE A) :=
     λₙ _, λₛ _, a.
@@ -792,10 +781,12 @@ Proof.
   apply test2.
 Qed.
 
-Example test4 {A : ofe} : ⊢@{TreePropI} (∃ (y : A), ∀ x, x ≡ y) -∗ (∀ x, ∃ (y : A), x ≡ y).
+Example test4 {A : ofe} : ⊢@{TreePropI} (∃ (y : A), ∀ x, x ≡ y)
+                           -∗ (∀ x, ∃ (y : A), x ≡ y).
 Proof.
   iIntros "(%y & H)".
   iIntros (x).
   iExists y.
-  iApply "H".
+  iRewrite ("H" $! x).
+  done.
 Qed.

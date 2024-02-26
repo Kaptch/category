@@ -219,3 +219,117 @@ Next Obligation.
   intros; simpl.
   now rewrite arrow_comp_id_l, arrow_comp_id_r.
 Qed.
+
+Program Definition FunctorId {C : Category}
+  : Functor C C :=
+  {|
+    FO x := x;
+    fmap A B := (λₛ f, f)%setoid;
+  |}.
+Next Obligation.
+  intros; now simpl.
+Qed.
+Next Obligation.
+  intros; now simpl.
+Qed.
+Next Obligation.
+  intros; now simpl.
+Qed.
+
+Program Definition FunctorCompose {A B C : Category} (F : Functor B C)
+  (G : Functor A B) : Functor A C :=
+  {|
+    FO i := F (G i);
+    fmap X Y := (λₛ f, fmap F (fmap G f))%setoid;
+  |}.
+Next Obligation.
+  intros; simpl.
+  now rewrite H.
+Qed.
+Next Obligation.
+  intros; simpl.
+  now rewrite 2 fmap_id.
+Qed.
+Next Obligation.
+  intros; simpl.
+  now rewrite 2 fmap_comp.
+Qed.
+
+Lemma FunctorComposeFmapIdL {A B : Category} (F : Functor A B)
+  : ∀ {a b : A} (f : (a [~>] b)%cat), (fmap (FunctorCompose FunctorId F) f ≡ fmap F f)%setoid.
+Proof.
+  intros a b f.
+  reflexivity.
+Qed.
+
+Lemma FunctorComposeFmapIdR {A B : Category} (F : Functor A B)
+  : ∀ {a b : A} (f : (a [~>] b)%cat), (fmap (FunctorCompose F FunctorId) f ≡ fmap F f)%setoid.
+Proof.
+  intros a b f.
+  reflexivity.
+Qed.
+
+Lemma FunctorComposeFmapAssoc {A B C D : Category}
+  (F : Functor A B) (G : Functor B C) (H : Functor C D)
+  : ∀ {a b : A} (f : (a [~>] b)%cat), (fmap (FunctorCompose H (FunctorCompose G F)) f ≡ fmap (FunctorCompose (FunctorCompose H G) F) f)%setoid.
+Proof.
+  intros a b f.
+  reflexivity.
+Qed.
+
+Lemma FunctorComposeIdL {A B : Category} (F : Functor A B)
+  : ∀ a, ((FunctorCompose FunctorId F) a = F a).
+Proof.
+  intros a.
+  reflexivity.
+Qed.
+
+Lemma FunctorComposeIdR {A B : Category} (F : Functor A B)
+  : ∀ a, ((FunctorCompose F FunctorId) a = F a).
+Proof.
+  intros a.
+  reflexivity.
+Qed.
+
+Lemma FunctorComposeAssoc {A B C D : Category}
+  (F : Functor A B) (G : Functor B C) (H : Functor C D)
+  : ∀ a, ((FunctorCompose H (FunctorCompose G F)) a = (FunctorCompose (FunctorCompose H G) F) a).
+Proof.
+  intros a.
+  reflexivity.
+Qed.
+
+Record FunctorSetoidBundle {A B : Category} (F G : Functor A B) : Prop :=
+  {
+    functor_obj_eq : ∀ x, F x = G x;
+    functor_arr_eq : ∀ {a b : A} (f : (a [~>] b)%cat),
+      (eq_rect _ (λ x, (G a [~>] x)%cat)
+         (eq_rect _ (λ x, (x [~>] F b)%cat) (fmap F f) (G a) (functor_obj_eq a))
+         (G b) (functor_obj_eq b) ≡ fmap G f)%setoid;
+  }.
+
+Program Definition FunctorProd {A B C D : Category} (F : Functor A C)
+  (G : Functor B D) : Functor (A × B)%cat (C × D)%cat :=
+  {|
+    FO i := (F (fst i), G (snd i));
+    fmap X Y := (λₛ f, (fmap F (fst f), fmap G (snd f)))%setoid;
+  |}.
+Next Obligation.
+  intros ???? ?? [? ?] [? ?] [? ?] [? ?] [? ?]; simpl in *.
+  split; now f_equiv.
+Qed.
+Next Obligation.
+  intros ???? ?? [? ?]; simpl in *.
+  now split; rewrite fmap_id.
+Qed.
+Next Obligation.
+  intros ???? ?? [? ?] [? ?] [? ?] [? ?] [? ?]; simpl in *.
+  now split; rewrite fmap_comp.
+Qed.
+
+Fixpoint endofunctor_n {C : Category} (F : Functor C C) (n : nat)
+  : Functor C C :=
+  match n with
+  | 0 => F
+  | S n' => FunctorCompose (endofunctor_n F n') F
+  end.

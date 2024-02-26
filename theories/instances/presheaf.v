@@ -1,20 +1,22 @@
 From category Require Import
-                      base
-                      setoid
-                      category
-                      sets
-                      terminal
-                      functor
-                      limit
-                      prod
-                      exp
-                      hom
-                      pullback
-                      subobject
-                      classes.limits
-                      classes.exp
-                      classes.subobject
-                      instances.sets.
+  base
+  setoid
+  category
+  sets
+  initial
+  terminal
+  functor
+  limit
+  prod
+  exp
+  hom
+  pullback
+  subobject
+  classes.limits
+  classes.colimits
+  classes.exp
+  classes.subobject
+  instances.sets.
 
 Definition PSh (C : Category) : Category := FunCat (C op)%cat SetoidCat.
 
@@ -481,6 +483,43 @@ Section PSh_inst.
   Proof.
     intros [].
   Qed.
+
+  Program Definition PSh_initial {C : Category} :
+    Initial (PSh C) :=
+    {|
+      initial_obj := {|
+                      FO _ := [Empty_set];
+                      fmap A B := λₛ _, idS
+                    |}
+    |}.
+  Next Obligation.
+    intros; simpl; reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl; reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl; intros [].
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    unshelve eexists.
+    - unshelve econstructor.
+      + intros; simpl.
+        unshelve econstructor.
+        * intros [].
+        * intros [].
+      + intros; simpl.
+        intros [].
+    - split.
+      + constructor.
+      + intros; simpl.
+        intros ? [].
+  Qed.
+
+  Global Instance PSh_hasInitial {C : Category} :
+    hasInitial (PSh C) := {| has_initial := PSh_initial |}.
+
 End PSh_inst.
 
 Section Sieves.

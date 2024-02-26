@@ -157,6 +157,53 @@ Section Aux.
     now rewrite !arrow_comp_id_l, !arrow_comp_id_r.
   Qed.
 
+  Program Definition pick {C : Category}
+    `{!hasTerminal C} `{!hasBinaryProducts C} `{!hasExp C} {X : C} :
+    X [~>] (𝟙 @ C ⇒ X @ C) := (Curry π₁).
+
+  Lemma UncurryComp {C : Category}
+    `{!hasBinaryProducts C} `{!hasExp C}
+    {W X Y Z : C}
+    {f : X [~>] Y ⇒ Z @ C} {g : W [~>] X} :
+    Uncurry (f ∘ g) ≡ Uncurry f ∘ ⟨ g ×ₐ ı ⟩.
+  Proof.
+    unfold Uncurry.
+    Opaque ArrBinProd.
+    simpl.
+    rewrite arrow_comp_assoc.
+    f_equiv.
+    rewrite <-((snd (projT2
+                      (bin_prod_ump (Y ⇒ Z @ C) Y
+                         (Y ⇒ Z @ C ×ₒ Y @ C)
+                         (W ×ₒ Y @ C) (f ∘ g ∘ π₁) (ı ∘ π₂))))
+                ((⟨ f ×ₐ ı ⟩) ∘ (⟨ g ×ₐ ı ⟩))).
+    - reflexivity.
+    - Transparent ArrBinProd.
+      split.
+      + rewrite <-arrow_comp_assoc.
+        simpl.
+        rewrite <-(proj1 (fst (projT2
+                                (bin_prod_ump (Y ⇒ Z @ C) Y
+                                   (Y ⇒ Z @ C ×ₒ Y @ C) (X ×ₒ Y @ C)
+                                   (f ∘ π₁) (ı ∘ π₂))))).
+        rewrite 2arrow_comp_assoc.
+        f_equiv.
+        now rewrite <-(proj1 (fst (projT2
+                                    (bin_prod_ump X Y (X ×ₒ Y @ C)
+                                       (W ×ₒ Y @ C) (g ∘ π₁) (ı ∘ π₂))))).
+      + rewrite arrow_comp_id_l.
+        rewrite <-arrow_comp_assoc.
+        simpl.
+        rewrite <-(proj2 (fst (projT2
+                                (bin_prod_ump (Y ⇒ Z @ C) Y
+                                   (Y ⇒ Z @ C ×ₒ Y @ C) (X ×ₒ Y @ C)
+                                   (f ∘ π₁) (ı ∘ π₂))))).
+        rewrite arrow_comp_id_l.
+        rewrite <-(proj2 (fst (projT2
+                                (bin_prod_ump X Y (X ×ₒ Y @ C)
+                                   (W ×ₒ Y @ C) (g ∘ π₁) (ı ∘ π₂))))).
+        now rewrite arrow_comp_id_l.
+  Qed.
 End Aux.
 
 Notation "'λ⟨' f '⟩'" := (Curry f) (at level 50) : cat_scope.

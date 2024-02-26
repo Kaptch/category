@@ -1,12 +1,12 @@
 From category Require Import
-                      base
-                      setoid
-                      category
-                      sets
-                      terminal
-                      functor
-                      limit
-                      prod.
+  base
+  setoid
+  category
+  sets
+  terminal
+  functor
+  limit
+  prod.
 
 Section Limits.
   Local Open Scope setoid_scope.
@@ -220,7 +220,53 @@ Section Aux.
       apply (proj1 (fst (projT2 (@bin_prod_ump C Y Z (Y ×ₒ Z @ C) X a₂ a)))).
     - apply (proj2 (fst (projT2 (@bin_prod_ump C Y Z (Y ×ₒ Z @ C) X a₂ a)))).
   Qed.
+
+  Program Definition DiagonalArr {C : Category}
+    `{!hasBinaryProducts C}
+    {X : C} : X [~>] (X ×ₒ X @ C)
+    := projT1 (@bin_prod_ump C X X (X ×ₒ X @ C) X ı ı).
+
+  Definition invπ₁ {C : Category} `{!hasTerminal C} `{!hasBinaryProducts C} {X : C}
+    : X [~>] X ×ₒ (𝟙 @ C) @ C
+    := projT1 (@bin_prod_ump C X (𝟙 @ C) (X ×ₒ 𝟙 @ C @ C) X ı (! @ C)).
+
+  Definition invπ₂ {C : Category} `{!hasTerminal C} `{!hasBinaryProducts C} {X : C}
+    : X [~>] (𝟙 @ C) ×ₒ X @ C
+    := projT1 (@bin_prod_ump C (𝟙 @ C) X (𝟙 @ C ×ₒ X @ C) X (! @ C) ı).
+
+  Lemma invProp1 {C : Category} `{!hasTerminal C} `{!hasBinaryProducts C} {X : C}
+    : π₁ ∘ (@invπ₁ C _ _ X) ≡ ı.
+  Proof.
+    unfold invπ₁.
+    unfold π₁.
+    now rewrite <-(proj1 (fst (projT2 (@bin_prod_ump C X (𝟙 @ C) (X ×ₒ 𝟙 @ C @ C) X ı (! @ C))))).
+  Qed.
+
+  Lemma invProp2 {C : Category} `{!hasTerminal C} `{!hasBinaryProducts C} {X : C}
+    : π₂ ∘ (@invπ₂ C _ _ X) ≡ ı.
+  Proof.
+    unfold invπ₂.
+    unfold π₂.
+    now rewrite <-(proj2 (fst (projT2 (@bin_prod_ump C (𝟙 @ C) X (𝟙 @ C ×ₒ X @ C) X (! @ C) ı)))).
+  Qed.
+
+  Lemma DiagProp1 {C : Category} `{!hasBinaryProducts C} {X : C}
+    : π₁ ∘ (@DiagonalArr C _ X) ≡ ı.
+  Proof.
+    unfold π₁.
+    unfold DiagonalArr.
+    now rewrite <-(proj1 (fst (projT2 (@bin_prod_ump C X X (X ×ₒ X @ C) X ı ı)))).
+  Qed.
+
+  Lemma DiagProp2 {C : Category} `{!hasBinaryProducts C} {X : C}
+    : π₂ ∘ (@DiagonalArr C _ X) ≡ ı.
+  Proof.
+    unfold π₂.
+    unfold DiagonalArr.
+    now rewrite <-(proj2 (fst (projT2 (@bin_prod_ump C X X (X ×ₒ X @ C) X ı ı)))).
+  Qed.
 End Aux.
 
 Notation "'⟨' f ',' g '⟩'" := (ArrBinUnrec f g) (at level 50) : cat_scope.
 Notation "'⟨' f '×ₐ' g '⟩'" := (ArrBinProd f g) (at level 50) : cat_scope.
+Notation "'δₐ'" := (DiagonalArr) (at level 50) : cat_scope.
