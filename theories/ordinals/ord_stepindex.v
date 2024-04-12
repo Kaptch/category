@@ -203,7 +203,8 @@ Section ord_definition.
 
 End ord_definition.
 Local Hint Extern 0 (ordinal _) => by apply ord_set_is_ordinal : core.
-
+Global Infix "≺≺" := ord_lt (at level 80).
+Global Infix "⪯⪯" := (rc ord_lt) (at level 80).
 
 Section set_ordinal_lemmas.
   Implicit Types α β γ δ : Ord.

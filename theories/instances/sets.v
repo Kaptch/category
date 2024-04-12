@@ -11,6 +11,7 @@ From category Require Import
                       prod
                       exp
                       classes.limits
+                      classes.colimits
                       classes.exp.
 
 Section SetoidInst.
@@ -53,7 +54,7 @@ Section SetoidInst.
   Program Definition TerminalSet : Terminal SetoidCat :=
     {|
       terminal_obj := [ unit ] : SetoidCat;
-      terminal_proj X := existT _ (λₛ _, tt) _;
+      terminal_proj X := existT (λₛ _, tt) _;
     |}.
   Next Obligation.
     now simpl.
@@ -119,7 +120,7 @@ Section SetoidInst.
     : Terminal (ConeCat J) :=
     {|
       terminal_obj := Setoid_limit D J;
-      terminal_proj X := existT _ (Setoid_limit_terminal_arr D J X) _;
+      terminal_proj X := existT (Setoid_limit_terminal_arr D J X) _;
     |}.
   Next Obligation.
     intros; simpl.
@@ -143,7 +144,7 @@ Section SetoidInst.
       bin_proj_arr₁ := (λₛ H :: (X × Y)%setoid, fst H);
       bin_proj_arr₂ := (λₛ H :: (X × Y)%setoid, snd H);
       bin_prod_ump := λ (p' : Setoid) (p₁ : p' [→] X) (p₂ : p' [→] Y),
-        existT _ (λₛ x, ((p₁ x, p₂ x) : SetoidProd _ _)) _;
+        existT (λₛ x, ((p₁ x, p₂ x) : SetoidProd _ _)) _;
     |}.
   Next Obligation.
     intros ?? [? ?] [? ?] [? ?].
@@ -193,7 +194,6 @@ Section SetoidInst.
       ∘ ⟨ f ×ₐ ı ⟩ :=
   λ Z' eval',
     existT
-      _
       (λₛ z, λₛ y, eval' (z, y))
       _.
   Next Obligation.
@@ -240,4 +240,117 @@ Section SetoidInst.
     intros.
     apply Setoid_hasLimits.
   Defined.
+
+  Definition Setoid_colimit_rel' (D : Category) (J : D [⇒] SetoidCat)
+    : (sigT (FO J)) → (sigT (FO J)) → Prop :=
+    λ X Y, (exists (ϕ : projT1 X [~>] projT1 Y), fmap J ϕ (projT2 X) ≡ (projT2 Y)).
+
+  Definition Setoid_colimit_rel (D : Category) (J : D [⇒] SetoidCat)
+    : (sigT (FO J)) → (sigT (FO J)) → Prop :=
+    Relation_Operators.clos_refl_sym_trans _ (Setoid_colimit_rel' D J).
+
+  Lemma Setoid_colimit_rel_equiv (D : Category) (J : D [⇒] SetoidCat)
+    : Equivalence (Setoid_colimit_rel D J).
+  Proof.
+    pose proof (Operators_Properties.clos_rst_is_equiv _ (Setoid_colimit_rel' D J)) as [H1 H2 H3].
+    split.
+    - apply H1.
+    - apply H3.
+    - apply H2.
+  Qed.
+
+  Program Definition Setoid_colimit_obj (D : Category) (J : D [⇒] SetoidCat) : SetoidCat
+    :=
+    {|
+      setoid_carrier := (sigT (FO J));
+      setoid_eq X Y := Setoid_colimit_rel D J X Y;
+      setoid_equiv := Setoid_colimit_rel_equiv D J;
+    |}.
+
+  Program Definition Setoid_colimit_cocone (D : Category) (J : D [⇒] SetoidCat) : Cocone J
+    :=
+    {|
+      cocone_obj := Setoid_colimit_obj D J;
+      cocone_nat := λₙ x, λₛ s, existT x s;
+    |}.
+  Next Obligation.
+    intros; simpl.
+    apply Relation_Operators.rst_step.
+    unfold Setoid_colimit_rel'.
+    simpl.
+    exists ı.
+    rewrite H.
+    apply (@fmap_id _ _ J x).
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros a.
+    unfold compose, id; simpl.
+    apply (Setoid_colimit_rel_equiv D J).
+    constructor.
+    unfold Setoid_colimit_rel'.
+    simpl.
+    exists f.
+    reflexivity.
+  Qed.
+
+  Program Definition Setoid_colimit_cocone_initial_arr
+    (D : Category) (J : D [⇒] SetoidCat) (X : CoconeCat J) : (@Arr (@CoconeCat D SetoidCat J) (Setoid_colimit_cocone D J) X)
+    :=
+    {|
+      cocone_arr := λₛ x, (@cocone_nat D SetoidCat J X (projT1 x) (projT2 x));
+    |}.
+  Next Obligation.
+    intros D J X a₁ a₂ H.
+    simpl in *.
+    induction H.
+    - destruct x, y.
+      destruct H as [ϕ <-].
+      simpl in *.
+      rewrite ->(eta_comp (cocone_nat X) _ _ ϕ s).
+      reflexivity.
+    - reflexivity.
+    - rewrite IHclos_refl_sym_trans.
+      reflexivity.
+    - rewrite IHclos_refl_sym_trans1.
+      rewrite IHclos_refl_sym_trans2.
+      reflexivity.
+  Qed.
+  Next Obligation.
+    intros j; simpl.
+    intros a.
+    unfold compose; simpl.
+    reflexivity.
+  Qed.
+
+  Program Definition Setoid_colimit_cocone_initial (D : Category) (J : D [⇒] SetoidCat) : Initial (CoconeCat J)
+    :=
+    {|
+      initial_obj := Setoid_colimit_cocone D J;
+      initial_proj X := existT (Setoid_colimit_cocone_initial_arr D J X) _;
+    |}.
+  Next Obligation.
+    intros D J X.
+    split; [constructor |].
+    intros x' _.
+    simpl.
+    intros [x Jx]; simpl.
+    rewrite <-(@cocone_comp D SetoidCat J _ _ x' x Jx).
+    simpl; unfold compose; simpl.
+    reflexivity.
+  Qed.
+
+  Program Definition Setoid_hasColimits {D : Category} (J : D [⇒] SetoidCat)
+    : Colimit J :=
+    {|
+      colimit_obj := Setoid_colimit_cocone_initial D J;
+    |}.
+
+  Global Instance Setoid_hasColimitsInst : hasColimits SetoidCat.
+  Proof.
+    constructor.
+    intros.
+    apply Setoid_hasColimits.
+  Defined.
+
 End SetoidInst.

@@ -96,7 +96,7 @@ Section Aux.
   Next Obligation.
     intros; simpl.
     pose proof (fst (projT2 (prod_ump _ (Π g @ C) (Π f @ C) (h ∘ (proj_arr _ (Π f @ C))))) j) as H.
-    rewrite H.
+    rewrite ->H.
     reflexivity.
   Qed.
 
@@ -198,6 +198,32 @@ Section Aux.
       + simpl; now rewrite <-(proj2 (fst (projT2 (@bin_prod_ump _ _ _ (Z₁ ×ₒ Z₂ @ C) _ _ _)))).
   Qed.
 
+  Lemma ArrBinProdCompL {C : Category}
+    `{!hasBinaryProducts C}
+    {X₁ Y₁ Z₁ X₂ Y₂ : C}
+    {f₁ : X₁ [~>] Y₁}
+    {g₁ : Y₁ [~>] Z₁}
+    {t : X₂ [~>] Y₂}
+    : (ArrBinProd g₁ t ∘ ArrBinProd f₁ ı)
+        ≡ ArrBinProd (g₁ ∘ f₁) t.
+  Proof.
+    rewrite <-(arrow_comp_id_r t) at 2.
+    apply ArrBinProdComp.
+  Qed.
+
+  Lemma ArrBinProdCompR {C : Category}
+    `{!hasBinaryProducts C}
+    {X₁ Y₁ Z₁ X₂ Y₂ : C}
+    {f₁ : X₁ [~>] Y₁}
+    {g₁ : Y₁ [~>] Z₁}
+    {t : X₂ [~>] Y₂}
+    : (ArrBinProd t g₁ ∘ ArrBinProd ı f₁)
+        ≡ ArrBinProd t (g₁ ∘ f₁).
+  Proof.
+    rewrite <-(arrow_comp_id_r t) at 2.
+    apply ArrBinProdComp.
+  Qed.
+
   Program Definition ArrBinUnrec {C : Category}
     `{!hasBinaryProducts C}
     {X Y Z : C}
@@ -219,6 +245,26 @@ Section Aux.
     - rewrite H.
       apply (proj1 (fst (projT2 (@bin_prod_ump C Y Z (Y ×ₒ Z @ C) X a₂ a)))).
     - apply (proj2 (fst (projT2 (@bin_prod_ump C Y Z (Y ×ₒ Z @ C) X a₂ a)))).
+  Qed.
+
+  Lemma ArrBinUnrec1 {C : Category}
+    `{!hasBinaryProducts C}
+    {X Y Z : C}
+    (f : X [~>] Y) (g : X [~>] Z)
+    : π₁ ∘ ArrBinUnrec f g ≡ f.
+  Proof.
+    symmetry.
+    apply (proj1 (fst (projT2 (bin_prod_ump Y Z (Y ×ₒ Z @ C) X f g)))).
+  Qed.
+
+  Lemma ArrBinUnrec2 {C : Category}
+    `{!hasBinaryProducts C}
+    {X Y Z : C}
+    (f : X [~>] Y) (g : X [~>] Z)
+    : π₂ ∘ ArrBinUnrec f g ≡ g.
+  Proof.
+    symmetry.
+    apply (proj2 (fst (projT2 (bin_prod_ump Y Z (Y ×ₒ Z @ C) X f g)))).
   Qed.
 
   Program Definition DiagonalArr {C : Category}
@@ -264,6 +310,72 @@ Section Aux.
     unfold π₂.
     unfold DiagonalArr.
     now rewrite <-(proj2 (fst (projT2 (@bin_prod_ump C X X (X ×ₒ X @ C) X ı ı)))).
+  Qed.
+
+  Lemma ArrBinUnrecProp {C : Category}
+    `{!hasBinaryProducts C}
+    {X Y Z : C} {f : X [~>] Y} {g : X [~>] Z}
+    : ArrBinUnrec f g ≡ ArrBinProd f g ∘ DiagonalArr.
+  Proof.
+    apply (snd (projT2 (bin_prod_ump Y Z (Y ×ₒ Z @ C) X f g))).
+    split.
+    - rewrite <-arrow_comp_assoc.
+      rewrite <-(proj1 (fst (projT2 (bin_prod_ump Y Z (Y ×ₒ Z @ C) (X ×ₒ X @ C)
+                                      (f ∘ π₁)
+                                      (g ∘ π₂))))).
+      rewrite arrow_comp_assoc.
+      rewrite DiagProp1.
+      now rewrite arrow_comp_id_r.
+    - rewrite <-arrow_comp_assoc.
+      rewrite <-(proj2 (fst (projT2 (bin_prod_ump Y Z (Y ×ₒ Z @ C) (X ×ₒ X @ C)
+                                      (f ∘ π₁)
+                                      (g ∘ π₂))))).
+      rewrite arrow_comp_assoc.
+      rewrite DiagProp2.
+      now rewrite arrow_comp_id_r.
+  Qed.
+
+  Program Definition BinProdFunctor {C : Category}
+    `{!hasBinaryProducts C} : (C × C) [⇒] C :=
+    {|
+      FO A := (fst A) ×ₒ (snd A) @ C;
+      functor.fmap A B := λₛ f, ArrBinProd (fst f) (snd f);
+    |}.
+  Next Obligation.
+    intros; simpl.
+    destruct A as [A1 A2]; destruct B as [B1 B2];
+      destruct H as [H1 H2].
+    apply (snd (projT2 (bin_prod_ump B1 B2 (B1 ×ₒ B2 @ C)
+                          (A1 ×ₒ A2 @ C) (fst a₁ ∘ π₁) (snd a₁ ∘ π₂)))).
+    split.
+    - rewrite H1.
+      apply (proj1 (fst (projT2 (bin_prod_ump B1 B2 (B1 ×ₒ B2 @ C)
+                                   (A1 ×ₒ A2 @ C) (fst a₂ ∘ π₁) (snd a₂ ∘ π₂))))).
+    - rewrite H2.
+      apply (proj2 (fst (projT2 (bin_prod_ump B1 B2 (B1 ×ₒ B2 @ C)
+                                   (A1 ×ₒ A2 @ C) (fst a₂ ∘ π₁) (snd a₂ ∘ π₂))))).
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    apply (snd (projT2 (bin_prod_ump (fst A) (snd A)
+                               (fst A ×ₒ snd A @ C)
+                               (fst A ×ₒ snd A @ C) (ı ∘ π₁) (ı ∘ π₂)))).
+    split.
+    - now rewrite arrow_comp_id_l arrow_comp_id_r.
+    - now rewrite arrow_comp_id_l arrow_comp_id_r.
+  Qed.
+  Next Obligation.
+    Opaque ArrBinProd.
+    intros; simpl.
+    destruct A as [A1 A2];
+      destruct B as [B1 B2];
+      destruct C0 as [C1 C2];
+      destruct f as [f1 f2];
+      destruct g as [g1 g2].
+    simpl.
+    erewrite <-ArrBinProdComp.
+    reflexivity.
+    Transparent ArrBinProd.
   Qed.
 End Aux.
 

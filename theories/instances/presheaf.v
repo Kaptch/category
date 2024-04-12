@@ -7,6 +7,7 @@ From category Require Import
   terminal
   functor
   limit
+  colimit
   prod
   exp
   hom
@@ -16,6 +17,7 @@ From category Require Import
   classes.colimits
   classes.exp
   classes.subobject
+  classes.enrichment
   instances.sets.
 
 Definition PSh (C : Category) : Category := FunCat (C op)%cat SetoidCat.
@@ -27,21 +29,21 @@ Section PSh_exp.
 
   Context {Obj : Category}.
 
-  Class FComp {X Y : PSh Obj} {A} (K : ∀ {B}, (Arr A B) → X B → Y B) :=
+  Class FComp {X Y : PSh Obj} {A} (K : ∀ {B}, (Arr A B : SetoidCat) [~>] X B [~>] Y B) :=
     comp_fmap : ∀ {B C} (δ₂ : Arr B C) (δ₁ : Arr A B) (v : X B),
         K (δ₂ ∘ δ₁) (fmap X δ₂ v) ≡ fmap Y δ₂ (K δ₁ v).
 
   Record RemFun (X Y : PSh Obj) (A : Obj op) :=
-    { arr :> ∀ {B}, (Arr A B) → X B → Y B;
-      arr_ext {B : Obj op}
-      : Proper (setoid_eq ==> setoid_eq ==> setoid_eq) (@arr B);
+    { arr :> ∀ B, (Arr A B : SetoidCat) [~>] X B [~>] Y B;
+      (* arr_ext {B : Obj op} *)
+      (* : Proper (setoid_eq ==> setoid_eq ==> setoid_eq) (@arr B); *)
       arr_fmap : FComp (@arr)
     }.
-  Arguments arr {X Y A} _ {B} _ _.
+  Arguments arr {X Y A} _ B.
 
-  Global Instance RF_prop {X Y : PSh Obj} {A} {RF : RemFun X Y A} {B} :
-    Proper (setoid_eq ==> setoid_eq ==> setoid_eq) (RF B) :=
-    arr_ext _ _ _ RF.
+  (* Global Instance RF_prop {X Y : PSh Obj} {A} {RF : RemFun X Y A} {B} : *)
+  (*   Proper (setoid_eq ==> setoid_eq ==> setoid_eq) (RF B) := *)
+  (*   arr_ext _ _ _ RF. *)
 
   Global Instance RF_FComp {X Y : PSh Obj} {A} {RF : RemFun X Y A} :
     FComp RF := arr_fmap _ _ _ RF.
@@ -68,13 +70,17 @@ Section PSh_exp.
 
   Program Definition RemFun_fmap {X Y : PSh Obj}
     : ∀ {A B}, (Arr A B) → (RemFun X Y) A → (RemFun X Y) B :=
-    λ {A B} δ φ, {| arr C δ' v := φ C (δ' ∘ δ) v |}.
+  λ {A B} δ φ, {| arr C := λₛ δ', λₛ v, φ C (δ' ∘ δ) v |}.
   Next Obligation.
-    intros X Y A B δ φ C.
-    intros δ₁ δ₂ EQδ v₁ v₂ EQv; now rewrite EQδ, EQv.
+    intros; simpl.
+    now rewrite H.
   Qed.
   Next Obligation.
-    unfold FComp; intros; rewrite arrow_comp_assoc; apply arr_fmap.
+    intros; simpl.
+    intros ?; now rewrite H.
+  Qed.
+  Next Obligation.
+    unfold FComp; intros; simpl; rewrite <-arrow_comp_assoc; apply arr_fmap.
   Qed.
 
   Program Definition PArr (X Y : PSh Obj) : PSh Obj :=
@@ -109,11 +115,11 @@ Section PSh_exp.
   Qed.
 End PSh_exp.
 
-Notation "'λₖ' Γ δ μ , e" :=
-  {| arr Γ δ μ := e;
-    arr_ext := _;
+Notation "'λₖ' Γ , e" :=
+  {| arr Γ := e;
+    (* arr_ext := _; *)
     arr_fmap := _
-  |} (at level 120, Γ binder, δ binder, μ binder, no associativity)
+  |} (at level 120, Γ binder, no associativity)
     : functor_scope.
 
 Section PSh_inst.
@@ -141,7 +147,7 @@ Section PSh_inst.
   Next Obligation.
     intros; simpl.
     intros [? ?]; simpl.
-    split; do 3 f_equiv; apply H.
+    now split; f_equiv; rewrite H.
   Defined.
   Next Obligation.
     intros; simpl.
@@ -219,8 +225,8 @@ Section PSh_inst.
     intros [? ?]; unfold compose; simpl.
     rewrite arrow_comp_id_r.
     rewrite <-(@arr_fmap C Y X X0 r X0 Y0 f ı).
-    f_equiv.
-    now rewrite arrow_comp_id_r.
+    f_equiv; last done.
+    now rewrite ->arrow_comp_id_r.
   Qed.
 
   Program Definition PArr_ump {C} (X Y : PSh C) :
@@ -231,13 +237,18 @@ Section PSh_inst.
       ∘ ⟨ f ×ₐ ı ⟩ :=
   λ Z' eval',
     existT
-      _
-      (λₙ x, λₛ y, λₖ Γ δ μ, (eval' Γ ((fmap Z' δ y), μ)))
+      (λₙ x, λₛ y, λₖ Γ, λₛ δ, λₛ μ, (eval' Γ ((fmap Z' δ y), μ)))
       _.
   Next Obligation.
     intros; simpl.
-    intros ??????.
-    f_equiv; split; simpl; [now do 2 f_equiv| assumption].
+    f_equiv.
+    now split.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros ?; simpl.
+    f_equiv.
+    split; simpl; [now rewrite H | reflexivity].
   Qed.
   Next Obligation.
     intros; simpl.
@@ -245,6 +256,7 @@ Section PSh_inst.
     pose proof (eta_comp eval' _ _ δ₂) as H.
     simpl in H.
     unfold compose in H.
+    simpl.
     rewrite <-H.
     f_equiv.
     split.
@@ -327,6 +339,172 @@ Section PSh_inst.
     rewrite (@fmap_comp D (PSh C) J _ _ _ f g c a).
     reflexivity.
   Qed.
+
+  Program Definition PSh_colimit {C} (D : Category) (J : D [⇒] (PSh C)) : PSh C :=
+    {|
+      FO c := colim (PSh_limit_pointwise D J c) @ SetoidCat;
+      fmap A B := λₛ f, λₛ g, existT (projT1 g) (fmap (J (projT1 g)) f (projT2 g));
+    |}.
+  Next Obligation.
+    intros; simpl.
+    induction H.
+    - destruct H as [g H].
+      constructor.
+      exists g.
+      simpl.
+      rewrite <-H.
+      simpl.
+      rewrite <-(eta_comp (fmap J g) _ _ f (projT2 x)).
+      reflexivity.
+    - constructor.
+      exists ı.
+      simpl.
+      rewrite (@fmap_id _ _ J (projT1 x) B).
+      reflexivity.
+    - apply Setoid_colimit_rel_equiv.
+      apply IHclos_refl_sym_trans.
+    - eapply (@Equivalence_Transitive _ _ (Setoid_colimit_rel_equiv D (PSh_limit_pointwise D J B))).
+      + apply IHclos_refl_sym_trans1.
+      + apply IHclos_refl_sym_trans2.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros [? ?].
+    simpl.
+    constructor.
+    unfold Setoid_colimit_rel'.
+    simpl.
+    exists ı.
+    rewrite H.
+    rewrite (@fmap_id _ _ J x B).
+    simpl.
+    reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros [? ?].
+    simpl.
+    constructor.
+    unfold Setoid_colimit_rel'.
+    simpl.
+    exists ı.
+    rewrite (@fmap_id _ _ J x A).
+    simpl.
+    apply (@fmap_id _ _ (J x) A s).
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros [? ?].
+    simpl.
+    constructor.
+    unfold Setoid_colimit_rel'.
+    simpl.
+    exists ı.
+    rewrite (@fmap_id _ _ J x C0).
+    simpl.
+    apply (@fmap_comp _ _ (J x) A).
+  Qed.
+
+  Program Definition PSh_colimit_cocone {C} (D : Category) (J : D [⇒] (PSh C))
+    : CoconeCat J :=
+    {|
+      cocone_obj := PSh_colimit D J;
+      cocone_nat := λₙ t, λₙ a, λₛ b, existT t b;
+    |}.
+  Next Obligation.
+    intros; simpl.
+    constructor.
+    unfold Setoid_colimit_rel'; simpl.
+    exists ı.
+    rewrite (@fmap_id _ _ J t a).
+    apply H.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros; simpl.
+    unfold compose; simpl.
+    apply Setoid_colimit_rel_equiv.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros; simpl.
+    unfold compose; simpl.
+    unfold id; simpl.
+    apply Setoid_colimit_rel_equiv.
+    constructor.
+    unfold Setoid_colimit_rel'; simpl.
+    exists f.
+    reflexivity.
+  Qed.
+
+  Program Definition PSh_colimit_cocone_initial_arr' {C} (D : Category)
+    (J : D [⇒] (PSh C)) (X : CoconeCat J) : (PSh_colimit D J) [~>] X
+    := λₙ x, λₛ s, (cocone_nat X (projT1 s) x (projT2 s)).
+  Next Obligation.
+    intros; simpl.
+    simpl in *.
+    induction H.
+    - destruct x0, y.
+      destruct H as [ϕ H].
+      simpl in *.
+      rewrite <-H.
+      rewrite ->(eta_comp (η cocone_nat X) _ _ ϕ x s).
+      reflexivity.
+    - reflexivity.
+    - rewrite IHclos_refl_sym_trans.
+      reflexivity.
+    - rewrite IHclos_refl_sym_trans1.
+      rewrite IHclos_refl_sym_trans2.
+      reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros [? ?]; unfold compose; simpl.
+    rewrite ->(eta_comp (η (η cocone_nat X) x) _ _ f s).
+    reflexivity.
+  Qed.
+
+  Program Definition PSh_colimit_cocone_initial_arr {C} (D : Category)
+    (J : D [⇒] (PSh C)) (X : CoconeCat J) : (PSh_colimit_cocone D J) [~>] X
+    :=
+    {|
+      cocone_arr := PSh_colimit_cocone_initial_arr' D J X;
+    |}.
+  Next Obligation.
+    intros; simpl.
+    intros; unfold compose; simpl.
+    reflexivity.
+  Qed.
+
+  Program Definition PSh_colimit_cocone_initial {C} (D : Category)
+    (J : D [⇒] (PSh C))
+    : Initial (CoconeCat J) :=
+    {|
+      initial_obj := PSh_colimit_cocone D J;
+      initial_proj X := existT (PSh_colimit_cocone_initial_arr D J X) _;
+    |}.
+  Next Obligation.
+    intros; simpl.
+    split; [constructor |].
+    intros x' _.
+    intros; simpl.
+    intros ? [x Jx]; simpl.
+    rewrite <-(@cocone_comp D (PSh C) J _ _ x' x X0 Jx).
+    reflexivity.
+  Qed.
+
+  Program Definition PSh_hasColimits {C} {D : Category}
+    (J : D [⇒] (PSh C)) : Colimit J :=
+    {|
+      colimit_obj := PSh_colimit_cocone_initial D J;
+    |}.
+
+  Global Instance PSh_hasColimitsInst {C} : hasColimits (PSh C).
+  Proof.
+    constructor.
+    intros.
+    apply PSh_hasColimits.
+  Defined.
 
   Program Definition PSh_limit {C} (D : Category) (J : D [⇒] (PSh C)) : PSh C :=
     {|
@@ -427,7 +605,7 @@ Section PSh_inst.
   Next Obligation.
     intros; simpl.
     intros; simpl.
-    rewrite (eta_comp (η (η cone_nat X) X1) _ _ f a).
+    rewrite ->(eta_comp (η (η cone_nat X) X1) _ _ f a).
     reflexivity.
   Qed.
   Next Obligation.
@@ -442,7 +620,7 @@ Section PSh_inst.
     {|
       terminal_obj := PSh_limit_cone D J;
       terminal_proj X :=
-        existT _ (PSh_limit_cone_terminal_arr D J X) _;
+        existT (PSh_limit_cone_terminal_arr D J X) _;
     |}.
   Next Obligation.
     intros; simpl.
@@ -602,7 +780,7 @@ Section SievesPSh.
     }
     {
       intros; simpl.
-      intros ?; now do 2 f_equiv.
+      intros ?; now f_equiv.
     }
     {
       intros; simpl.
@@ -642,8 +820,8 @@ Section SievesPSh.
     assert (∀ (X0 : C) (a : X0 [~>] x), (η (monic f)) X0 (fmap X a (y t)) ≡ (η (monic f)) X0 (fmap X a (z t))) as G'.
     {
       intros ? a; simpl.
-      rewrite (@eta_comp _ _ _ _ (monic f) _ _ a (y t)).
-      rewrite (@eta_comp _ _ _ _ (monic f) _ _ a (z t)).
+      rewrite ->(@eta_comp _ _ _ _ (monic f) _ _ a (y t)).
+      rewrite ->(@eta_comp _ _ _ _ (monic f) _ _ a (z t)).
       simpl.
       unfold compose; simpl.
       f_equiv.
@@ -805,7 +983,7 @@ Section SievesPSh.
           simpl in *.
           assert ((monic f) x X1 ≡ (monic f) x X2) as H1.
           {
-            rewrite s, s0.
+            rewrite s s0.
             rewrite H0.
             reflexivity.
           }
@@ -828,7 +1006,7 @@ Section SievesPSh.
         simpl in *.
         unfold id in *.
         simpl in *.
-        rewrite (@eta_comp _ _ _ _ h _ _ f' a) in s.
+        rewrite ->(@eta_comp _ _ _ _ h _ _ f' a) in s.
         simpl in *.
         unfold compose in *; simpl in *.
         rewrite <-s0 in s; clear s0.
@@ -901,9 +1079,9 @@ Section SievesPSh.
           }
           apply KKK.
         }
-        rewrite (eta_comp Θ _ _ f x c ı) in KKK'.
+        rewrite ->(eta_comp Θ _ _ f x c ı) in KKK'.
         simpl in KKK'.
-        rewrite arrow_comp_id_r in KKK'.
+        rewrite ->arrow_comp_id_r in KKK'.
         apply KKK'.
       + intros H1.
         simpl.
@@ -929,7 +1107,7 @@ Section SievesPSh.
           unfold compose; simpl.
           split; [constructor | intros _].
           rewrite (eta_comp Θ _ _ a' (fmap P f x) d' f').
-          rewrite (eta_comp Θ _ _ f x d' (a' ∘ f')).
+          rewrite ->(eta_comp Θ _ _ f x d' (a' ∘ f')).
           simpl.
           now apply sieve_closed.
         }
@@ -953,6 +1131,160 @@ Section SievesPSh.
   Defined.
 
 End SievesPSh.
+
+Section Enrichment.
+  Local Open Scope setoid_scope.
+  Local Open Scope cat_scope.
+  Local Open Scope functor_scope.
+
+  Local Opaque has_terminal.
+
+  Global Program Instance PShSelfEnrichment {C : Category} : SelfEnrichment (PSh C) :=
+    {|
+      HOM_ID A := λₙ x, λₛ p, λₖ Γ, λₛ f, idS;
+      HOM_COMP A B D := λₙ x, λₛ p, λₖ Γ, λₛ f, (fst p Γ f) ∘ (snd p Γ f);
+      quote A B f := λ⟨f ∘ π₂⟩;
+      unquote A B f := (eval ∘ ⟨f ×ₐ ı⟩ ∘ invπ₂);
+    |}.
+   Next Obligation.
+    intros; simpl.
+    reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    unfold FComp.
+    reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros ???; simpl.
+    reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros ????; simpl.
+    reflexivity.
+  Qed.
+    Next Obligation.
+    intros; simpl.
+    simpl in *.
+    destruct p as [p1 p2].
+    simpl.
+    intros?.
+    now rewrite H.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    unfold FComp.
+    intros ?????; simpl.
+    destruct p as [p1 p2].
+    simpl; unfold compose; simpl.
+    rewrite <-(arr_fmap _ _ _ p1 B0 C0 δ₂ δ₁).
+    f_equiv.
+    rewrite <-(arr_fmap _ _ _ p2 B0 C0 δ₂ δ₁).
+    reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros ???; simpl.
+    destruct a₁ as [X1 X2].
+    destruct a₂ as [Y1 Y2].
+    destruct H as [H1 H2].
+    simpl in *; unfold compose; simpl.
+    f_equiv.
+    - intros ?; apply H1.
+    - apply H2.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros [? ?] ???; simpl.
+    reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros ?????; simpl.
+    reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros ?????; simpl.
+    reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros ??; simpl.
+    intros ???; simpl.
+    reflexivity.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros ?????; simpl.
+    pose proof (eta_comp f _ _ δ a B0 ı v) as H.
+    simpl in H.
+    rewrite arrow_comp_id_r in H.
+    rewrite <-H.
+    apply (setoid_arr_eq _ _ ((η f) B0)).
+    now rewrite ->PointUnique, (PointUnique (functor.fmap (𝟙 @ PSh C) δ a)).
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    reflexivity.
+  Qed.
+End Enrichment.
+
+Section Universe.
+  Open Scope setoid.
+  Open Scope cat.
+  Open Scope functor.
+
+  Definition ElemCatObj {C : Category} (F : PSh C) := sigT (λ a : C, F a).
+
+  Program Definition ElemCatArrSetoid {C : Category} {F : PSh C} (a b : ElemCatObj F) : Setoid :=
+    SubsetSetoid (projT1 a [~>] projT1 b) (λ (f : projT1 a [~>] projT1 b), functor.fmap F f (projT2 b) ≡ projT2 a).
+
+  Program Definition ElemCat {C : Category} (F : PSh C) : Category :=
+    {|
+      Obj := ElemCatObj F;
+      Arr a b := ElemCatArrSetoid a b;
+      arrow_id a := Specif.exist _ (@arrow_id C (projT1 a)) (@fmap_id _ _ F (projT1 a) (projT2 a));
+      arrow_comp a b c := λₛ f :: ElemCatArrSetoid b c, λₛ g :: ElemCatArrSetoid a b,
+        Specif.exist _ (proj1_sig f ∘ (proj1_sig g)) _;
+    |}.
+  Next Obligation.
+    intros; simpl.
+    pose proof (@fmap_comp _ _ F _ _ _ (proj1_sig g) (proj1_sig f) (projT2 c)) as H.
+    simpl in H.
+    unfold compose in H.
+    rewrite (proj2_sig f) in H.
+    rewrite (proj2_sig g) in H.
+    apply H.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    f_equiv.
+    apply H.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    intros [? ?].
+    do 2 f_equiv.
+    apply H.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    now rewrite arrow_comp_id_l.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    now rewrite arrow_comp_id_r.
+  Qed.
+  Next Obligation.
+    intros; simpl.
+    now rewrite arrow_comp_assoc.
+  Qed.
+End Universe.
+
+Notation "'∫' F" := (ElemCat F) (at level 50) : category_scope.
 
 (* Section Regular. *)
 (*   Local Open Scope setoid_scope. *)

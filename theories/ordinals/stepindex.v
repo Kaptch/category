@@ -366,6 +366,11 @@ Section StepIndexProperties.
   Qed.
 End StepIndexProperties.
 
+Global Instance index_lt_irrel' {SI : indexT} (α β : SI) : ProofIrrel (α ≺ β).
+Proof.
+  apply _.
+Qed.
+
 Global Instance index_le_irrel {SI : indexT} (α β : SI) : ProofIrrel (α ⪯ β).
 Proof.
   assert (∀ x y (p : x ⪯ y) y' (q : x ⪯ y'),
@@ -386,6 +391,13 @@ Proof.
   }
   intros p q.
   by apply (Eqdep_dec.eq_dep_eq_dec (λ x y, index_eq_dec x y)), aux.
+Qed.
+
+Global Instance index_eq_irrel {SI : indexT} (α β : SI) : ProofIrrel (α = β).
+Proof.
+  apply eq_pi.
+  intros γ.
+  apply index_eq_dec.
 Qed.
 
 Local Hint Immediate index_zero_minimum : core.
@@ -483,7 +495,7 @@ Section ordinal_recursor.
     - exfalso. specialize (limit_index_not_zero α). rewrite EQ. by apply index_lt_irrefl.
     - exfalso. specialize (limit_index_is_limit α β (index_succ_greater' _ _ EQ)).
       rewrite EQ. by apply index_lt_irrefl.
-    - simpl. symmetry. apply index_rec_lim_ext_proofs.
+    - simpl. symmetry. simpl. apply index_rec_lim_ext_proofs.
   Qed.
 End ordinal_recursor.
 
@@ -759,10 +771,8 @@ Section pair_index.
           by eapply index_lt_irrefl.
         * destruct G.
           rewrite (proof_irrel H i).
-          unshelve erewrite (proof_irrel e eq_refl).
-          -- apply eq_pi.
-             apply index_eq_dec.
-          -- reflexivity.
+          rewrite (proof_irrel e eq_refl).
+          reflexivity.
   Qed.
 
   Canonical Structure pairI : indexT := IndexT (I * J) pair_lt pair_zero pair_succ pair_index_mixin.

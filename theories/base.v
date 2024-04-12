@@ -4,6 +4,18 @@ Require Export Coq.Init.Logic.
 Require Export Coq.Structures.Equalities.
 Require Export Coq.Logic.Eqdep_dec Coq.Logic.ChoiceFacts.
 
+From stdpp Require Export options.
+
+#[export] Set Suggest Proof Using.
+#[export] Set Warnings "+deprecated-hint-without-locality".
+
+From Coq.ssr Require Export ssreflect.
+From stdpp Require Export prelude.
+Set Default Proof Using "Type".
+Global Open Scope general_if_scope.
+Global Set SsrOldRewriteGoalsOrder.
+Ltac done := stdpp.tactics.done.
+
 Global Set Default Goal Selector "!".
 Global Set Default Proof Using "Type".
 Global Set Universe Polymorphism.

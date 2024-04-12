@@ -29,7 +29,7 @@ Section Hom.
   Qed.
   Next Obligation.
     intros [? ?] ?; simpl.
-    now rewrite arrow_comp_id_l, arrow_comp_id_r.
+    now rewrite arrow_comp_id_l arrow_comp_id_r.
   Qed.
   Next Obligation.
     intros [? ?] [? ?] [? ?] [? ?] [? ?] ?; simpl.
@@ -167,7 +167,7 @@ Section Hom.
     simpl in H1.
     unfold compose in H1; simpl in H1.
     rewrite <-H1.
-    rewrite arrow_comp_id_l, arrow_comp_id_r.
+    rewrite arrow_comp_id_l arrow_comp_id_r.
     reflexivity.
   Qed.
 
@@ -191,7 +191,7 @@ Section Hom.
   Next Obligation.
     intros; simpl.
     intros; simpl.
-    now do 2 f_equiv.
+    now f_equiv.
   Qed.
   Next Obligation.
     intros; simpl.

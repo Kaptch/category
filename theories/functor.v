@@ -34,6 +34,21 @@ Section Functor.
     intros; simpl.
     now rewrite arrow_comp_id_l.
   Qed.
+
+  Lemma fmap_id' {X Y : Category} {G : Functor X Y}
+    : ∀ {A} (f : (A [~>] A)%cat), (f ≡ ı)%cat → (fmap _ _ G f ≡ ı)%cat.
+  Proof.
+    intros ? f ->.
+    apply fmap_id.
+  Qed.
+
+  Lemma fmap_comp' {X Y : Category} {G : Functor X Y}
+    : ∀ {A B C} (f : (A [~>] C)%cat) (g : (B [~>] C)%cat) (h : (A [~>] B)%cat),
+    (f ≡ g ∘ h)%cat → (fmap _ _ G f ≡ fmap _ _ G g ∘ fmap _ _ G h)%cat.
+  Proof.
+    intros ?????? ->.
+    apply fmap_comp.
+  Qed.
 End Functor.
 
 Arguments FO {_ _}.
@@ -124,8 +139,7 @@ Section Discrete.
     |}.
   Next Obligation.
     intros; simpl in *.
-    rewrite H, a₂.
-    reflexivity.
+    now rewrite H.
   Qed.
   Next Obligation.
     intros; simpl.
@@ -175,7 +189,7 @@ Section FunCat.
     |}.
   Next Obligation.
     intros; simpl.
-    now rewrite arrow_comp_id_l, arrow_comp_id_r.
+    now rewrite arrow_comp_id_l arrow_comp_id_r.
   Qed.
   Next Obligation.
     intros; simpl.
@@ -217,7 +231,7 @@ Program Definition constantFuncReindex {C : Category} {D : Category} {x x' : D}
   (λₙ a, p)%functor.
 Next Obligation.
   intros; simpl.
-  now rewrite arrow_comp_id_l, arrow_comp_id_r.
+  now rewrite arrow_comp_id_l arrow_comp_id_r.
 Qed.
 
 Program Definition FunctorId {C : Category}
@@ -248,11 +262,11 @@ Next Obligation.
 Qed.
 Next Obligation.
   intros; simpl.
-  now rewrite 2 fmap_id.
+  now rewrite ->2 fmap_id.
 Qed.
 Next Obligation.
   intros; simpl.
-  now rewrite 2 fmap_comp.
+  now rewrite ->2 fmap_comp.
 Qed.
 
 Lemma FunctorComposeFmapIdL {A B : Category} (F : Functor A B)

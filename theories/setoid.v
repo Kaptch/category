@@ -145,6 +145,15 @@ Section Setoids.
     - intros ???; now symmetry.
     - intros ?????; etransitivity; eassumption.
   Qed.
+
+  Program Definition QuotientSetoid (X : Setoid) (R : X → X → Prop)
+    (Heq : Equivalence R) :=
+    {|
+      setoid_carrier := X;
+      setoid_eq := R;
+      setoid_equiv := Heq;
+    |}.
+
 End Setoids.
 
 Arguments setoid_eq {_}.
@@ -157,7 +166,7 @@ Notation "a [→] b" := (SetoidArr a b) (at level 70, right associativity)
     : setoid_scope.
 Notation "a × b" := (SetoidProd a b) (at level 70, right associativity)
     : setoid_scope.
-Notation "[ a ]" := ({| setoid_carrier := a |}) : setoid_scope.
+Notation "[ a ]" := ({| setoid_carrier := a; setoid_eq := eq |}) : setoid_scope.
 Notation "'λₛ' x , e" := ({| setoid_arr x := e; setoid_arr_eq := _ |})
                            (at level 120, x binder, no associativity)
     : setoid_scope.
@@ -168,8 +177,10 @@ Notation "'λₛ' x '::' t , e" := ({|
                                  (at level 120, x binder, no associativity)
     : setoid_scope.
 
+Notation "X '∕' R" := (QuotientSetoid X R _) (at level 70) : setoid_scope.
+
 Definition unique_setoid {A : Setoid} (P : A → Type) (x : A) :=
-  (P x) * (forall (x' : A), P x' → (x ≡ x')%setoid).
+  prod (P x) (forall (x' : A), P x' → (x ≡ x')%setoid).
 
 Notation "'Σ' ! x .. y , p" :=
   (sigT (unique_setoid (fun x => .. (sigT (unique_setoid (fun y => p))) ..)))

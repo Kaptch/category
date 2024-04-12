@@ -81,7 +81,7 @@ Section IntLogic.
   Next Obligation.
     intros; simpl in *.
     intros d f.
-    now rewrite (fst H), (snd H).
+    now rewrite (fst H) (snd H).
   Qed.
   Next Obligation.
     intros; simpl in *.
@@ -103,7 +103,7 @@ Section IntLogic.
   Next Obligation.
     intros; simpl in *.
     intros; simpl.
-    now rewrite (fst H), (snd H).
+    now rewrite (fst H) (snd H).
   Qed.
   Next Obligation.
     intros; simpl in *.
@@ -124,7 +124,7 @@ Section IntLogic.
   Next Obligation.
     intros; simpl in *.
     intros; simpl.
-    now rewrite (fst H), (snd H).
+    now rewrite (fst H) (snd H).
   Qed.
   Next Obligation.
     intros; simpl in *.
@@ -185,23 +185,20 @@ Section IntLogic.
     intros; simpl in *.
     split; intros q e r r'.
     - simpl in *.
-      unshelve erewrite <-(@arr_ext C X PSh_sieve x y e (a₁ ∘ r) (a₂ ∘ r) _ r' r' _ e ı).
-      + now rewrite H.
-      + reflexivity.
-      + apply q.
+      eapply (@setoid_arr_eq _ _ (y e)); [| apply q].
+      rewrite H.
+      reflexivity.
     - simpl in *.
-      unshelve erewrite (@arr_ext C X PSh_sieve x y e (a₁ ∘ r) (a₂ ∘ r) _ r' r' _ e ı).
-      + now rewrite H.
-      + reflexivity.
-      + apply q.
+      eapply (@setoid_arr_eq _ _ (y e)); [| apply q].
+      rewrite H.
+      reflexivity.
   Qed.
   Next Obligation.
     intros; simpl in *.
     intros q e' r.
-    unshelve erewrite (@arr_ext C X PSh_sieve x y q (f ∘ g ∘ e') (f ∘ (g ∘ e')) _ r r _ q ı).
-    - now rewrite arrow_comp_assoc.
-    - reflexivity.
-    - apply (H q (g ∘ e') r).
+    eapply (@setoid_arr_eq _ _ (y q)); [| apply H].
+    rewrite arrow_comp_assoc.
+    reflexivity.
   Qed.
   Next Obligation.
     intros; simpl in *.
@@ -210,14 +207,12 @@ Section IntLogic.
   Next Obligation.
     intros; simpl in *.
     intros a d f'; split; intros G q e r.
-    - unshelve erewrite (@arr_ext C X PSh_sieve _ a q (f ∘ f' ∘ e) (f ∘ (f' ∘ e)) _ r r _ q ı).
-      + now rewrite arrow_comp_assoc.
-      + reflexivity.
-      + apply G.
-    - unshelve erewrite <-(@arr_ext C X PSh_sieve _ a q (f ∘ f' ∘ e) (f ∘ (f' ∘ e)) _ r r _ q ı).
-      + now rewrite arrow_comp_assoc.
-      + reflexivity.
-      + apply G.
+    - eapply (@setoid_arr_eq _ _ (a q)); [| apply G].
+      rewrite arrow_comp_assoc.
+      reflexivity.
+    - eapply (@setoid_arr_eq _ _ (a q)); [| apply G].
+      rewrite arrow_comp_assoc.
+      reflexivity.
   Qed.
 
   Program Definition existI {X : PSh C} : (X ⇒ (Ω @ (PSh C)) @ (PSh C)) [~>] Ω @ (PSh C) :=
@@ -225,8 +220,10 @@ Section IntLogic.
   Next Obligation.
     intros; simpl in *.
     split; intros [r G]; exists r.
-    - now unshelve erewrite <-(@arr_ext C X PSh_sieve x y p a₁ a₂ H r r _ p ı).
-    - now unshelve erewrite (@arr_ext C X PSh_sieve x y p a₁ a₂ H r r _ p ı).
+    - eapply (@setoid_arr_eq _ _ (y p)); [symmetry | apply G].
+      apply H.
+    - eapply (@setoid_arr_eq _ _ (y p)); [| apply G].
+      apply H.
   Qed.
   Next Obligation.
     intros; simpl in *.
@@ -236,7 +233,7 @@ Section IntLogic.
     simpl.
     rewrite arrow_comp_id_r.
     pose proof (@sieve_closed C _ (y d f r) d e ı g H) as K.
-    rewrite arrow_comp_id_l in K.
+    rewrite ->arrow_comp_id_l in K.
     apply K.
   Qed.
   Next Obligation.
@@ -338,11 +335,11 @@ Section IntLogic.
     split; intros.
     - destruct H as [r H].
       exists r.
-      rewrite (eta_comp (f r) _ _ f0 a d f1) in H.
+      rewrite ->(eta_comp (f r) _ _ f0 a d f1) in H.
       apply H.
     - destruct H as [r H].
       exists r.
-      rewrite (eta_comp (f r) _ _ f0 a d f1).
+      rewrite ->(eta_comp (f r) _ _ f0 a d f1).
       apply H.
   Qed.
 
@@ -430,7 +427,7 @@ Section IntLogic.
     t ≡ᵢ u ∧ᵢ u ≡ᵢ v ⊢ᵢ t ≡ᵢ v.
   Proof.
     intros n γ m f [H1 H2]; simpl in *.
-    now rewrite H1, H2.
+    now rewrite H1 H2.
   Qed.
 
   Lemma eq_subst {Γ A B : PSh C} (t u : Γ [~>] A) (D : A [~>] B) :
@@ -451,7 +448,7 @@ Section IntLogic.
   Proof.
     intros n γ m f [He HP]; simpl in *.
     specialize (He m ı).
-    rewrite arrow_comp_id_r in He.
+    rewrite ->arrow_comp_id_r in He.
     now apply He.
   Qed.
 
@@ -534,7 +531,7 @@ Section IntLogic.
     assert (Px' : (η P) n γ m (f ∘ ı)).
     { now rewrite arrow_comp_id_r. }
     specialize (H Px').
-    rewrite arrow_comp_id_r in H.
+    rewrite ->arrow_comp_id_r in H.
     apply H.
   Qed.
 
@@ -573,7 +570,7 @@ Section IntLogic.
     {
       apply (@setoid_arr_eq _ _ ((η P) m)).
       split; [reflexivity |].
-      rewrite (eta_comp t _ _ f γ).
+      rewrite ->(eta_comp t _ _ f γ).
       simpl.
       unfold compose; simpl.
       f_equiv.
@@ -613,7 +610,7 @@ Section IntLogic.
     pose proof (eta_comp Q _ _ f γ m ı) as J'.
     simpl in J'.
     unfold compose in J'.
-    rewrite arrow_comp_id_r in J'.
+    rewrite ->arrow_comp_id_r in J'.
     apply J'.
     apply J.
     apply Py.
@@ -649,7 +646,7 @@ Section IntLogic.
   Proof.
     intros n γ m f H.
     specialize (H m ı a).
-    rewrite arrow_comp_id_r in H.
+    rewrite ->arrow_comp_id_r in H.
     apply H.
   Qed.
 
@@ -904,7 +901,7 @@ Section IntLogic.
     simpl in J.
     unfold id in J.
     intros x'.
-    rewrite PointUnique.
+    rewrite ->PointUnique.
     apply J.
   Qed.
 
@@ -925,7 +922,7 @@ Section IntLogic.
     apply H.
     apply sieve_closed.
     pose proof (@sieve_closed C _ ((η P) A T1) _ _ ı f T2) as T3.
-    rewrite arrow_comp_id_l in T3.
+    rewrite ->arrow_comp_id_l in T3.
     apply T3.
   Defined.
   Next Obligation.
@@ -977,7 +974,7 @@ Section IntLogic.
     - intros _.
       destruct x as [? ?]; simpl.
       pose proof (@sieve_closed C _ ((η P) n x) _ _ ı f s) as T.
-      rewrite arrow_comp_id_l in T.
+      rewrite ->arrow_comp_id_l in T.
       apply T.
   Qed.
 
@@ -996,7 +993,7 @@ Section IntLogic.
   Next Obligation.
     intros; simpl in *.
     intros a.
-    rewrite (eta_comp f _ _ f0 a).
+    rewrite ->(eta_comp f _ _ f0 a).
     reflexivity.
   Qed.
 

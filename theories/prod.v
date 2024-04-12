@@ -29,7 +29,7 @@ Section ArbitraryProd.
     intros ???????; simpl.
     intros f.
     destruct f.
-    now rewrite arrow_comp_id_l, arrow_comp_id_r.
+    now rewrite arrow_comp_id_l arrow_comp_id_r.
   Qed.
 
   Program Definition ProdTerminalArr {C : Category} {I : Type} `{!EqDecision I}
@@ -245,7 +245,7 @@ Section BinProd.
     {
       intros; simpl.
       destruct f.
-      rewrite arrow_comp_id_r, arrow_comp_id_l.
+      rewrite arrow_comp_id_r arrow_comp_id_l.
       reflexivity.
     }
     exists (cone_arr (projT1

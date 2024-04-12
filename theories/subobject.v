@@ -74,15 +74,15 @@ Section SubObjectClassifier.
         exists (projT1 (@is_pb_ump _ _ _ _ _ _ _ _ _ G W h j Q)).
         split.
         * split.
-          -- rewrite (proj1 (fst (projT2 (@is_pb_ump _ _ _ _ _ _ _ _ _ G W h j Q)))) at 1.
+          -- rewrite ->(proj1 (fst (projT2 (@is_pb_ump _ _ _ _ _ _ _ _ _ G W h j Q)))) at 1.
              do 2 f_equiv.
              symmetry.
              now apply (snd (projT2 (@terminal_proj C (𝟙 @ C) (𝟙 @ C))) ((! @ C) ∘ (! @ C))).
-          -- now rewrite (proj2 (fst (projT2 (@is_pb_ump _ _ _ _ _ _ _ _ _ G W h j Q)))) at 1.
+          -- now rewrite ->(proj2 (fst (projT2 (@is_pb_ump _ _ _ _ _ _ _ _ _ G W h j Q)))) at 1.
         * intros x' X'.
           apply (snd (projT2 (@is_pb_ump _ _ _ _ _ _ _ _ _ G W h j Q)) x').
           split; [| apply (proj2 X')].
-          rewrite (proj1 X') at 1.
+          rewrite ->(proj1 X') at 1.
           do 2 f_equiv.
           now apply (snd (projT2 (@terminal_proj C (𝟙 @ C) (𝟙 @ C))) ((! @ C) ∘ (! @ C))).
   Qed.
@@ -129,15 +129,15 @@ Section SubObjectClassifier.
         exists (projT1 (@is_pb_ump _ _ _ _ _ _ _ _ _ G W h j Q)).
         split.
         * split.
-          -- rewrite (proj1 (fst (projT2 (@is_pb_ump _ _ _ _ _ _ _ _ _ G W h j Q)))) at 1.
+          -- rewrite ->(proj1 (fst (projT2 (@is_pb_ump _ _ _ _ _ _ _ _ _ G W h j Q)))) at 1.
              do 2 f_equiv.
              symmetry.
              now apply (snd (projT2 (@terminal_proj C (𝟙 @ C) (𝟙 @ C))) ((! @ C) ∘ (! @ C))).
-          -- now rewrite (proj2 (fst (projT2 (@is_pb_ump _ _ _ _ _ _ _ _ _ G W h j Q)))) at 1.
+          -- now rewrite ->(proj2 (fst (projT2 (@is_pb_ump _ _ _ _ _ _ _ _ _ G W h j Q)))) at 1.
         * intros x' X'.
           apply (snd (projT2 (@is_pb_ump _ _ _ _ _ _ _ _ _ G W h j Q)) x').
           split; [| apply (proj2 X')].
-          rewrite (proj1 X') at 1.
+          rewrite ->(proj1 X') at 1.
           do 2 f_equiv.
           now apply (snd (projT2 (@terminal_proj C (𝟙 @ C) (𝟙 @ C))) ((! @ C) ∘ (! @ C))).
   Qed.

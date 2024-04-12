@@ -190,7 +190,7 @@ Section PB.
       assert (K : isCommSquare f (g ∘ l) (h ∘ p) o).
       {
         constructor.
-        rewrite arrow_comp_assoc at 1.
+        rewrite arrow_comp_assoc. 
         rewrite <-(CS_comm _ _ L).
         rewrite <-2 arrow_comp_assoc.
         do 2 f_equiv.
@@ -213,10 +213,10 @@ Section PB.
         rewrite <-(snd (projT2 (@is_pb_ump _ _ _ _ _ _ _ _ H P (h ∘ p) (l ∘ o) K')) p).
         * rewrite <-(snd (projT2 (@is_pb_ump _ _ _ _ _ _ _ _ H P (h ∘ p) (l ∘ o) K')) (k ∘ projT1 q)); [reflexivity |].
           split.
-          -- now rewrite H1, arrow_comp_assoc.
-          -- rewrite H2.
+          -- now rewrite ->H1, arrow_comp_assoc.
+          -- rewrite ->H2.
              now rewrite <-2 arrow_comp_assoc, (CS_comm _ _ J).
-        * split; [now rewrite H1, arrow_comp_assoc |].
+        * split; [now rewrite H1 arrow_comp_assoc |].
           now rewrite <-(CS_comm _ _ L).
       + intros x' X'.
         apply (snd (projT2 q) x').
@@ -254,10 +254,7 @@ Section Limit.
     end.
 
   Program Definition PB_Diagram_Arr_Setoid (X Y : PB_Diagram_Obj)
-    : Setoid :=
-    {|
-      setoid_carrier := PB_Diagram_Arr X Y;
-    |}.
+    : Setoid := [ PB_Diagram_Arr X Y ].
 
   Definition PB_Diagram_id (X : PB_Diagram_Obj) : PB_Diagram_Arr_Setoid X X :=
     match X with
@@ -354,7 +351,7 @@ Section Limit.
       destruct A; simpl; reflexivity.
     - intros; simpl.
       destruct A, B, C0, f0, g0; unfold PB_Diagram_Arr_Setoid, PB_Diagram_Arr in *;
-        simpl in *; rewrite ?arrow_comp_id_l, ?arrow_comp_id_r; reflexivity.
+        simpl in *; rewrite ?arrow_comp_id_l ?arrow_comp_id_r; reflexivity.
   Defined.
 
   (* Program Definition Limit_PB (J : (PB_Diagram_Cat [⇒] C)%functor) (l : Limit J) *)

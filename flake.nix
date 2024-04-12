@@ -21,6 +21,7 @@
               make
             '';
             propagatedBuildInputs = [
+              coqPkgs.stdpp
               coqPkgs.iris
             ];
           };

@@ -310,7 +310,7 @@ Notation "( x , y )" := (opair x y) (at level 0) : zf_scope.
 Definition pi1 p := ⋃ (⋂ p).
 Definition pi2 p := ⋃ (specification_set (⋃ p) (λ x, x ∈ ⋂ p → ⋃ p = ⋂ p)).
 Definition product A B := ⋃ ((λ a, (λ b, (a, b)) @ B) @ A).
-Notation "A × B" := (product A B) (at level 53) : zf_scope.
+Notation "A × B" := (product A B) (at level 70, right associativity) : zf_scope.
 
 
 Lemma single_el A B: A = B ↔ A ∈ (singleton B: set).
@@ -435,12 +435,12 @@ split; intros I.
 - destruct I as [I J]. by rewrite I J.
 Qed.
 
-Lemma product_empty1 B: ∅ × B = ∅.
+Lemma product_empty1 B: (∅ × B) = ∅.
 Proof.
 unfold product. rewrite repl_empty. by rewrite union_set_empty.
 Qed.
 
-Lemma product_empty2 A: A × ∅ = ∅.
+Lemma product_empty2 A: (A × ∅) = ∅.
 Proof.
   destruct (classic (A = ∅)).
   - rewrite H. apply product_empty1.
@@ -454,7 +454,7 @@ cut (replacement_set A (λ A : set, replacement_set ∅ (λ B : set, (A,B))) = s
   -- by rewrite -> repl_empty.
 Qed.
 
-Lemma product_el A B p: p ∈ A × B ↔ ∃ a b, a ∈ A ∧ b ∈ B ∧ p = (a,b).
+Lemma product_el A B p: p ∈ (A × B) ↔ ∃ a b, a ∈ A ∧ b ∈ B ∧ p = (a,b).
 Proof.
 split; intros I.
 - apply zf_union in I as [C [I I']]. apply zf_replacement in I' as [a [a' J]]. subst C.
@@ -469,7 +469,7 @@ split; intros I.
     * reflexivity.
 Qed.
 
-Lemma opair_pi A B a b p: p ∈ A × B → a = pi1 p → b = pi2 p → p = (a,b).
+Lemma opair_pi A B a b p: p ∈ (A × B) → a = pi1 p → b = pi2 p → p = (a,b).
 Proof.
 intros I PI1 PI2. apply product_el in I as [a' [b' [H [H' J]]]].
 subst p. apply opair_eq. split.
@@ -477,59 +477,59 @@ subst p. apply opair_eq. split.
 - rewrite PI2. by rewrite pi2_cor.
 Qed.
 
-Lemma product_opair x y A B: x ∈ A ∧ y ∈ B ↔ (x,y) ∈ A × B.
+Lemma product_opair x y A B: x ∈ A ∧ y ∈ B ↔ (x,y) ∈ (A × B).
 Proof.
 split; intros I.
 - apply product_el. exists x, y. destruct I as [I I']. eauto.
 - apply product_el in I as [a [b [I [I' J]]]]. apply opair_eq in J as [J J']. subst x y. eauto.
 Qed.
 
-Lemma product_pi1 A B p: p ∈ A × B → pi1 p ∈ A.
+Lemma product_pi1 A B p: p ∈ (A × B) → pi1 p ∈ A.
 Proof.
 intros I. apply product_el in I as [a [b [I [I' J]]]].
 rewrite J. rewrite pi1_cor. assumption.
 Qed.
 
-Lemma product_pi2 A B p: p ∈ A × B → pi2 p ∈ B.
+Lemma product_pi2 A B p: p ∈ (A × B) → pi2 p ∈ B.
 Proof.
 intros I. apply product_el in I as [a [b [I [I' J]]]].
 rewrite J. rewrite pi2_cor. assumption.
 Qed.
 
-Lemma product_pi A B p: p ∈ A × B → pi1 p ∈ A ∧ pi2 p ∈ B.
+Lemma product_pi A B p: p ∈ (A × B) → pi1 p ∈ A ∧ pi2 p ∈ B.
 Proof.
   intros I. split.
   - eauto using product_pi1.
   - eauto using product_pi2.
 Qed.
 
-Lemma product_p A B p: p ∈ A × B → p = (pi1 p, pi2 p).
+Lemma product_p A B p: p ∈ (A × B) → p = (pi1 p, pi2 p).
 Proof.
 intros I. by apply (opair_pi A B).
 Qed.
 
-Lemma product_subs1 A A' B: A' ⊆ A → A' × B ⊆ A × B.
+Lemma product_subs1 A A' B: A' ⊆ A → (A' × B) ⊆ (A × B).
 Proof.
 intros I p H.
 specialize (product_el A' B p). intros [J _]. specialize (J H). destruct J as [a [b [X [Y Z]]]].
 apply product_el. exists a, b. repeat split; eauto.
 Qed.
 
-Lemma product_subs2 A B B': B ⊆ B' → A ×B ⊆ A × B'.
+Lemma product_subs2 A B B': B ⊆ B' → (A ×B) ⊆ (A × B').
 Proof.
 intros I p H.
 specialize (product_el A B p). intros [J _]. specialize (J H). destruct J as [a [b [X [Y Z]]]].
 apply product_el. exists a, b. repeat split; eauto.
 Qed.
 
-Lemma product_subs A A': A' ⊆ A → A' × A' ⊆ A × A.
+Lemma product_subs A A': A' ⊆ A → (A' × A') ⊆ (A × A).
 Proof.
 intros I. specialize (product_subs1 A A' A I).
 intros J. specialize (product_subs2 A' A' A I).
 intros H. by apply (subs_trans (product A' A') (product A' A)).
 Qed.
 
-Lemma product_monotone A B C D: A ⊆ C → B ⊆ D → A × B ⊆ C × D.
+Lemma product_monotone A B C D: A ⊆ C → B ⊆ D → (A × B) ⊆ (C × D).
 Proof.
 intros I1 I2 p P.
 generalize (product_pi A B p P). intros [P1 P2].
@@ -540,4 +540,4 @@ Qed.
 
 End set_theory.
 Notation "( x , y )" := (opair x y) (at level 0) : zf_scope.
-Notation "A × B" := (product A B) (at level 53) : zf_scope.
+Notation "A × B" := (product A B) (at level 70, right associativity) : zf_scope.

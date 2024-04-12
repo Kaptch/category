@@ -17,6 +17,8 @@ Section Category.
       arrow_comp_id_r {A B} {f : Arr A B} : arrow_comp f arrow_id ≡ f;
       arrow_comp_assoc {A B C D} {h : Arr C D} {g : Arr B C} {f : Arr A B}
       : arrow_comp (arrow_comp h g) f ≡ arrow_comp h (arrow_comp g f);
+      (* arrow_comp_assoc_sym {A B C D} {h : Arr C D} {g : Arr B C} {f : Arr A B} *)
+      (* : arrow_comp h (arrow_comp g f) ≡ arrow_comp (arrow_comp h g) f; *)
     }.
 End Category.
 
@@ -26,6 +28,7 @@ Arguments arrow_comp {_ _ _ _}.
 Arguments arrow_comp_id_l {_ _ _}.
 Arguments arrow_comp_id_r {_ _ _}.
 Arguments arrow_comp_assoc {_ _ _ _ _}.
+(* Arguments arrow_comp_assoc_sym {_ _ _ _ _}. *)
 
 Notation "'ı'" := (arrow_id _) : cat_scope.
 Notation "f ∘ g" := (arrow_comp f%cat g%cat) (at level 40, left associativity)
@@ -51,26 +54,17 @@ Section Op.
       Obj := C;
       Arr A B := (B [~>] A)%cat;
       arrow_id A := ı;
-      arrow_comp _ _ _ := λₛ f, λₛ g, g ∘ f;
+      arrow_comp _ _ _ := flipS (arrow_comp);
+      arrow_comp_id_l _ _ := arrow_comp_id_r;
+      arrow_comp_id_r _ _ := arrow_comp_id_l;
+      arrow_comp_assoc _ _ _ _ _ _ _ := _;
+      (* arrow_comp_assoc_sym _ _ _ _ _ _ _ := arrow_comp_assoc _ _ _; *)
     |}.
   Next Obligation.
-    intros ?????? H; simpl.
-    do 2 f_equiv.
-    apply H.
-  Defined.
-  Next Obligation.
-    intros ????? H ?; simpl.
-    now rewrite H.
-  Defined.
-  Next Obligation.
-    intros; apply arrow_comp_id_r.
-  Defined.
-  Next Obligation.
-    intros; apply arrow_comp_id_l.
-  Defined.
-  Next Obligation.
-    intros; symmetry; apply arrow_comp_assoc.
-  Defined.
+    intros; simpl.
+    rewrite arrow_comp_assoc.
+    reflexivity.
+  Qed.
 End Op.
 
 Notation "C 'op'" := (Op C) (at level 70) : cat_scope.
@@ -96,6 +90,58 @@ Arguments iso21 {_ _ _} _.
 
 Notation "f '⁻¹'" := (iso2 f) (at level 40) : cat_scope.
 Notation "a ≃ b" := (Isomorphism a b) (at level 40) : cat_scope.
+
+Global Instance IsoCReflexive {C : Category}
+  : CRelationClasses.Reflexive (@Isomorphism C).
+Proof.
+  intros i.
+  refine {|
+      iso1 := ı%cat;
+      iso2 := ı%cat;
+    |}.
+  - apply arrow_comp_id_l.
+  - apply arrow_comp_id_l.
+Defined.
+
+Global Instance IsoCSymmetric {C : Category}
+  : CRelationClasses.Symmetric (@Isomorphism C).
+Proof.
+  intros a b H.
+  refine {|
+      iso1 := iso2 H;
+      iso2 := iso1 H;
+    |}.
+  - now rewrite iso21.
+  - now rewrite iso12.
+Defined.
+
+Global Instance IsoCTransitive {C : Category}
+  : CRelationClasses.Transitive (@Isomorphism C).
+Proof.
+  intros a b c H G.
+  refine {|
+      iso1 := (iso1 G ∘ iso1 H)%cat;
+      iso2 := (iso2 H ∘ iso2 G)%cat;
+    |}.
+  - rewrite arrow_comp_assoc.
+    rewrite <-(arrow_comp_assoc (G ⁻¹)%cat).
+    rewrite iso12.
+    rewrite arrow_comp_id_l.
+    rewrite iso12.
+    reflexivity.
+  - rewrite arrow_comp_assoc.
+    rewrite <-(arrow_comp_assoc H).
+    rewrite iso21.
+    rewrite arrow_comp_id_l.
+    rewrite iso21.
+    reflexivity.
+Defined.
+
+Global Instance IsoCEquiv {C : Category}
+  : CRelationClasses.Equivalence (@Isomorphism C).
+Proof.
+  split; apply _.
+Defined.
 
 Section Mono.
   Local Open Scope cat_scope.
