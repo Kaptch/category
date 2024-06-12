@@ -663,6 +663,123 @@ Section Temp.
     }.
   Arguments approx _ : clear implicits.
 
+  Program Definition approx_diagram {P : SI → Prop} {PI : ∀ a, ProofIrrel (P a)}
+    (H : @approx P) : ((@BoundedOrdCat SI P) op) [⇒] C :=
+    {|
+      FO x := approx_X H (`x) (proj2_sig x);
+    |}.
+  Next Obligation.
+    intros.
+    destruct A, B.
+    simpl.
+    unshelve econstructor.
+    + intros f.
+      simpl in f.
+      destruct (index_le_lt_eq_dec _ _ f).
+      * by apply approx_δ.
+      * subst.
+        rewrite (proof_irrel p p0).
+        apply ı.
+    + intros; simpl.
+      destruct H0.
+      simpl.
+      reflexivity.
+  Defined.
+  Next Obligation.
+    intros ? ? ? [? ?].
+    simpl.
+    destruct (index_le_lt_eq_dec x x (rc_refl (≺) x)).
+    + exfalso.
+      by eapply index_lt_irrefl.
+    + unfold eq_rect_r.
+      simpl.
+      assert ((Logic.eq_sym e) = Logic.eq_refl) as ->.
+      { apply proof_irrel. }
+      simpl.
+      assert ((proof_irrel p p) = Logic.eq_refl) as ->.
+      {
+        unshelve eapply proof_irrel.
+        apply eq_pi.
+        intros z.
+        left.
+        apply proof_irrel.
+      }
+      simpl.
+      reflexivity.
+  Qed.
+  Next Obligation.
+    intros ? ? ? [? ?] [? ?] [? ?].
+    simpl.
+    intros.
+    destruct (index_le_lt_eq_dec x0 x g).
+    + destruct (index_le_lt_eq_dec x1 x0 f).
+      * destruct (index_le_lt_eq_dec x1 x (transitivity f g)).
+        -- symmetry. eapply δ_comp.
+           apply H.
+        -- subst.
+           exfalso.
+           apply (index_lt_irrefl _ (transitivity i i0)).
+      * subst.
+        destruct (index_le_lt_eq_dec x0 x (transitivity f g)).
+        -- unfold eq_rect_r.
+           simpl.
+           destruct (Logic.eq_sym (proof_irrel p0 p1)).
+           simpl.
+           rewrite arrow_comp_id_l.
+           rewrite (proof_irrel i i0).
+           reflexivity.
+        -- subst.
+           exfalso.
+           by eapply index_lt_irrefl.
+    + subst.
+      unfold eq_rect_r.
+      simpl.
+      destruct (Logic.eq_sym (proof_irrel p p0)).
+      simpl.
+      rewrite arrow_comp_id_r.
+      assert (index_le_lt_eq_dec x1 x (transitivity f g) = index_le_lt_eq_dec x1 x f) as <-.
+      {
+        destruct (index_le_lt_eq_dec x1 x (transitivity f g));
+          destruct (index_le_lt_eq_dec x1 x f).
+        - f_equal.
+          apply proof_irrel.
+        - subst.
+          exfalso.
+          by eapply index_lt_irrefl.
+        - subst.
+          exfalso.
+          by eapply index_lt_irrefl.
+        - subst.
+          f_equal.
+          apply proof_irrel.
+      }
+      destruct (index_le_lt_eq_dec x1 x (transitivity f g)).
+      * reflexivity.
+      * subst.
+        simpl.
+        reflexivity.
+  Qed.
+
+  (* Program Definition solution_diagram {P : SI → Prop} {PI : ∀ a, ProofIrrel (P a)} *)
+  (*   (H : @approx P) : ((@BoundedOrdCat SI P) op) [⇒] C := *)
+  (*   {| *)
+  (*     FO x := F (approx_diagram H x, approx_diagram H x); *)
+  (*   |}. *)
+  (* Next Obligation. *)
+  (*   intros ? ? ? [? ?] [? ?]. *)
+  (*   simpl. *)
+  (*   unshelve econstructor. *)
+  (*   - simpl. *)
+  (*     intros f. *)
+
+
+  (* Record agree_fam {I : Type} {PI : I → (SI → Prop)} *)
+  (*   {AI : ∀ (i : I), approx (PI i)} : Type := { *)
+  (*     agree_eq : ∀ i j γ (H0 : PI i γ) (H1 : PI j γ), *)
+  (*       (approx_X (AI i) γ H0) ≃ (approx_X (AI j) γ H1); *)
+  (*     agree_coh  *)
+  (*   }. *)
+
   Record approx_agree {P0 P1 : SI → Prop}
     {A0 : approx P0}
     {A1 : approx P1} : Type :=
@@ -1988,7 +2105,6 @@ Section Temp.
           ∘ agree_eq (IH_agree α1 α2 Hα1 Hα2) α1 (reflexivity α1) (index_lt_le_subrel α1 α2 Hlt1)
           ≡ agree_eq (IH_agree α1 α3 Hα1 Hα3) α1 (reflexivity α1) (index_lt_le_subrel α1 α3 Hlt3).
     Proof.
-      simpl.
     Admitted.
 
     (* ??? *)
@@ -2340,57 +2456,6 @@ Section Temp.
 
     Program Definition δ_lim γ : Xlim [~>] subfinal_diagram γ :=
       approx_ψ IH γ I ∘ Xlim_side γ.
-
-    Program Definition subfinal_cone γ : ConeCat final_diagram :=
-      {|
-        cone_obj := subfinal_diagram γ;
-      |}.
-    Next Obligation.
-      intros γ.
-      unshelve econstructor.
-      - intros γ'.
-        simpl.
-        destruct (index_lt_eq_lt_dec (succ γ') γ) as [[H | H] | H].
-        + apply (iso1 (approx_eq _ _ _ _ _ _ (approx_props IH) γ' I I)
-                         ∘ (approx_δ IH (succ γ') γ I I H)).
-        + subst.
-          simpl.
-          apply (iso1 (approx_eq _ _ _ _ _ _ (approx_props IH) γ' I I)).
-        + apply (iso1 (approx_eq _ _ _ _ _ _ (approx_props IH) γ' I I)
-                   ∘ (approx_π IH γ (succ γ') I I H)).
-      - intros; simpl.
-        unfold final_diagram_obligation_1.
-        rewrite arrow_comp_id_r.
-        destruct (index_lt_eq_lt_dec (succ Y) γ) as [[H | H] | H].
-        + destruct (index_lt_eq_lt_dec (succ X) γ) as [[G | G] | G].
-          * destruct (index_le_lt_eq_dec Y X f).
-            -- admit.
-            -- unfold eq_rect_r.
-               destruct e.
-               simpl.
-               rewrite arrow_comp_id_l.
-               f_equiv.
-               rewrite (proof_irrel H G).
-               reflexivity.
-          * subst.
-            simpl.
-            destruct (index_le_lt_eq_dec Y X f) as [G | G].
-            -- admit.
-            -- unfold eq_rect_r.
-               destruct G.
-               simpl.
-               rewrite arrow_comp_id_l.
-               admit.
-          * destruct (index_le_lt_eq_dec Y X f) as [J | J].
-            -- admit.
-            -- destruct J.
-               exfalso.
-               admit.
-        + subst.
-          simpl.
-          admit.
-        + admit.
-    Admitted.
 
     Program Definition π_lim γ : subfinal_diagram γ [~>] Xlim := _.
     Next Obligation.
